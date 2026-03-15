@@ -39,10 +39,34 @@ df = art.df
 st.markdown(
     """
     <style>
+        :root {
+            --bg: #f6f7fb;
+            --surface: #ffffff;
+            --surface-2: #f8faff;
+            --text: #161b26;
+            --muted: #697386;
+            --border: #e7ebf3;
+            --accent: #4f46e5;
+            --accent-soft: #eef2ff;
+            --accent-2: #7c3aed;
+            --shadow: 0 10px 28px rgba(17, 24, 39, 0.06);
+            --radius-lg: 22px;
+            --radius-md: 16px;
+            --radius-sm: 12px;
+        }
+
+        html, body, [data-testid="stAppViewContainer"] {
+            background: var(--bg);
+        }
+
+        .stApp {
+            background: var(--bg);
+        }
+
         .block-container {
-            max-width: 760px;
-            padding-top: 1rem;
-            padding-bottom: 3rem;
+            max-width: 720px;
+            padding-top: 0.8rem;
+            padding-bottom: 2.2rem;
         }
 
         .app-shell {
@@ -50,160 +74,283 @@ st.markdown(
             margin: 0 auto;
         }
 
-        .topbar {
+        /* Hide Streamlit's extra top padding feel a bit */
+        [data-testid="stHeader"] {
+            background: transparent;
+        }
+
+        .appbar {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 0.3rem 0 1rem 0;
+            padding: 0.1rem 0 0.85rem 0;
         }
 
-        .brand {
-            font-size: 1.35rem;
-            font-weight: 800;
-            letter-spacing: -0.02em;
-            color: #111827;
-        }
-
-        .brand-sub {
-            font-size: 0.92rem;
-            color: #6b7280;
-            margin-top: 0.15rem;
-        }
-
-        .panel {
-            background: #ffffff;
-            border: 1px solid #eceff3;
-            border-radius: 24px;
-            padding: 1rem;
-            box-shadow: 0 8px 30px rgba(15, 23, 42, 0.05);
-            margin-bottom: 1rem;
-        }
-
-        .panel-title {
-            font-size: 0.95rem;
-            font-weight: 700;
-            color: #111827;
-            margin-bottom: 0.75rem;
-        }
-
-        .section-title {
-            font-size: 1.05rem;
-            font-weight: 750;
-            color: #111827;
-            margin: 1.1rem 0 0.35rem 0;
-            letter-spacing: -0.01em;
-        }
-
-        .section-subtitle {
-            color: #6b7280;
-            font-size: 0.95rem;
-            margin-bottom: 0.8rem;
-        }
-
-        .context-chip {
-            display: inline-block;
-            background: #f3f4f6;
-            color: #374151;
-            border-radius: 999px;
-            padding: 0.45rem 0.8rem;
-            font-size: 0.9rem;
-            margin-bottom: 0.9rem;
-            line-height: 1.35;
-        }
-
-        .rec-card {
-            background: #ffffff;
-            border: 1px solid #ebeef3;
-            border-radius: 22px;
-            padding: 1rem 1rem 0.95rem 1rem;
-            margin-bottom: 0.8rem;
-            box-shadow: 0 6px 18px rgba(15, 23, 42, 0.045);
-        }
-
-        .rec-header {
+        .appbar-left {
             display: flex;
-            align-items: flex-start;
-            gap: 0.65rem;
-            margin-bottom: 0.45rem;
+            align-items: center;
+            gap: 0.75rem;
+            min-width: 0;
         }
 
-        .rec-index {
-            min-width: 1.9rem;
-            height: 1.9rem;
-            border-radius: 999px;
-            background: #eef2ff;
-            color: #4338ca;
+        .brand-badge {
+            width: 2.15rem;
+            height: 2.15rem;
+            border-radius: 14px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-2));
             display: flex;
             align-items: center;
             justify-content: center;
+            color: white;
+            font-size: 1.05rem;
             font-weight: 800;
-            font-size: 0.88rem;
-            margin-top: 0.05rem;
+            box-shadow: 0 10px 18px rgba(79, 70, 229, 0.22);
             flex-shrink: 0;
         }
 
-        .rec-game {
-            font-size: 1.05rem;
+        .brand-wrap {
+            min-width: 0;
+        }
+
+        .brand-title {
+            font-size: 1.12rem;
             font-weight: 800;
-            color: #111827;
-            line-height: 1.3;
+            letter-spacing: -0.02em;
+            color: var(--text);
+            line-height: 1.15;
+            margin: 0;
+        }
+
+        .brand-subtitle {
+            font-size: 0.85rem;
+            color: var(--muted);
+            margin-top: 0.15rem;
+            line-height: 1.2;
+        }
+
+        .search-panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-lg);
+            padding: 1rem;
+            box-shadow: var(--shadow);
+            margin-bottom: 0.9rem;
+        }
+
+        .panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.85rem;
+        }
+
+        .panel-title {
+            font-size: 0.98rem;
+            font-weight: 750;
+            color: var(--text);
             letter-spacing: -0.01em;
         }
 
-        .rec-reason {
-            color: #374151;
-            line-height: 1.58;
-            font-size: 0.96rem;
-            white-space: normal;
-            overflow-wrap: break-word;
-            word-break: break-word;
-            margin-left: 2.55rem;
+        .panel-caption {
+            font-size: 0.8rem;
+            color: var(--muted);
         }
 
-        .divider-space {
-            height: 0.2rem;
+        /* Segmented control */
+        div[data-testid="stRadio"] > div[role="radiogroup"] {
+            display: grid !important;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.4rem;
+            background: #f2f4f8;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 0.3rem;
+            margin-bottom: 0.9rem;
         }
 
-        [data-testid="stRadio"] > div {
-            gap: 0.5rem;
-        }
-
-        [data-testid="stRadio"] label {
-            border-radius: 999px !important;
-        }
-
-        .stSelectbox label, .stTextArea label, .stSlider label {
+        div[data-testid="stRadio"] label {
+            margin: 0 !important;
+            background: transparent !important;
+            border: none !important;
+            border-radius: 11px !important;
+            min-height: 42px;
+            display: flex !important;
+            align-items: center;
+            justify-content: center;
+            color: var(--muted) !important;
             font-weight: 650 !important;
-            color: #374151 !important;
+            transition: all 0.15s ease;
+        }
+
+        div[data-testid="stRadio"] label:has(input:checked) {
+            background: var(--surface) !important;
+            color: var(--text) !important;
+            box-shadow: 0 1px 2px rgba(16, 24, 40, 0.06), 0 0 0 1px rgba(79, 70, 229, 0.08);
+        }
+
+        .field-note {
+            color: var(--muted);
+            font-size: 0.83rem;
+            margin-top: -0.15rem;
+            margin-bottom: 0.55rem;
+        }
+
+        .filters-label {
+            font-size: 0.78rem;
+            font-weight: 800;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-top: 0.2rem;
+            margin-bottom: 0.55rem;
+        }
+
+        .stSelectbox label,
+        .stTextArea label,
+        .stSlider label {
+            color: #354052 !important;
+            font-weight: 650 !important;
+            font-size: 0.9rem !important;
+        }
+
+        .stTextArea textarea {
+            border-radius: 14px !important;
+        }
+
+        .stSelectbox > div > div,
+        .stTextArea > div > div,
+        .stSlider {
+            margin-bottom: 0.15rem;
+        }
+
+        .results-header {
+            padding: 0.35rem 0 0.1rem 0;
+            margin-bottom: 0.35rem;
+        }
+
+        .results-title {
+            font-size: 1rem;
+            font-weight: 800;
+            color: var(--text);
+            letter-spacing: -0.01em;
+        }
+
+        .results-subtitle {
+            color: var(--muted);
+            font-size: 0.88rem;
+            margin-top: 0.18rem;
+            line-height: 1.35;
+        }
+
+        .context-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: var(--accent-soft);
+            color: #3730a3;
+            border: 1px solid #dfe4ff;
+            border-radius: 999px;
+            padding: 0.42rem 0.8rem;
+            font-size: 0.86rem;
+            font-weight: 600;
+            margin: 0.6rem 0 0.95rem 0;
+            max-width: 100%;
+            line-height: 1.3;
         }
 
         .empty-state {
-            background: #fafafa;
-            border: 1px dashed #d1d5db;
-            border-radius: 20px;
+            background: var(--surface);
+            border: 1px dashed #d8deea;
+            border-radius: 18px;
             padding: 1rem;
-            color: #6b7280;
-            font-size: 0.96rem;
+            color: var(--muted);
+            font-size: 0.94rem;
+            box-shadow: 0 4px 14px rgba(17, 24, 39, 0.03);
+        }
+
+        .rec-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 0.95rem 0.95rem 0.9rem 0.95rem;
+            margin-bottom: 0.72rem;
+            box-shadow: 0 8px 22px rgba(17, 24, 39, 0.045);
+        }
+
+        .rec-top {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.72rem;
+            margin-bottom: 0.35rem;
+        }
+
+        .rec-index {
+            min-width: 1.95rem;
+            height: 1.95rem;
+            border-radius: 999px;
+            background: var(--accent-soft);
+            color: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.86rem;
+            font-weight: 800;
+            flex-shrink: 0;
+            margin-top: 0.04rem;
+        }
+
+        .rec-title-wrap {
+            min-width: 0;
+        }
+
+        .rec-title {
+            font-size: 1.01rem;
+            font-weight: 800;
+            color: var(--text);
+            line-height: 1.28;
+            letter-spacing: -0.01em;
+            margin: 0;
+        }
+
+        .rec-reason {
+            margin-left: 2.67rem;
+            color: #425066;
+            font-size: 0.94rem;
+            line-height: 1.55;
+            white-space: normal;
+            overflow-wrap: break-word;
+            word-break: break-word;
+        }
+
+        .stSpinner > div {
+            border-top-color: var(--accent) !important;
         }
 
         @media (max-width: 640px) {
             .block-container {
-                padding-left: 0.8rem;
-                padding-right: 0.8rem;
+                padding-left: 0.85rem;
+                padding-right: 0.85rem;
+                padding-top: 0.55rem;
             }
 
-            .panel {
+            .search-panel {
                 padding: 0.9rem;
-                border-radius: 20px;
+            }
+
+            .brand-title {
+                font-size: 1.05rem;
+            }
+
+            .brand-subtitle {
+                font-size: 0.82rem;
             }
 
             .rec-card {
-                border-radius: 18px;
-                padding: 0.95rem 0.9rem 0.9rem 0.9rem;
+                padding: 0.9rem 0.9rem 0.85rem 0.9rem;
             }
 
             .rec-reason {
-                margin-left: 2.35rem;
+                margin-left: 2.58rem;
             }
         }
     </style>
@@ -215,40 +362,57 @@ st.markdown('<div class="app-shell">', unsafe_allow_html=True)
 
 st.markdown(
     """
-    <div class="topbar">
-        <div>
-            <div class="brand">Board Game Recommender</div>
-            <div class="brand-sub">Search by game or describe what you want.</div>
+    <div class="appbar">
+        <div class="appbar-left">
+            <div class="brand-badge">🎲</div>
+            <div class="brand-wrap">
+                <div class="brand-title">Board Game Recommender</div>
+                <div class="brand-subtitle">Find games by title or natural-language search</div>
+            </div>
         </div>
     </div>
     """,
     unsafe_allow_html=True,
 )
 
-# Search panel
-st.markdown('<div class="panel">', unsafe_allow_html=True)
-st.markdown('<div class="panel-title">Search</div>', unsafe_allow_html=True)
+st.markdown('<div class="search-panel">', unsafe_allow_html=True)
+st.markdown(
+    """
+    <div class="panel-header">
+        <div class="panel-title">Search</div>
+        <div class="panel-caption">Review-based recommendations</div>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 
 mode = st.radio(
-    "Mode",
+    "Search mode",
     ["Game name", "Natural language query"],
     horizontal=True,
     label_visibility="collapsed",
 )
 
 if mode == "Game name":
+    st.markdown('<div class="field-note">Choose a seed game to find similar titles.</div>', unsafe_allow_html=True)
     game = st.selectbox(
-        "Choose a game",
+        "Game",
         sorted(df["game_name"].dropna().unique().tolist()),
+        label_visibility="collapsed",
+        placeholder="Choose a game",
     )
     user_query = ""
 else:
+    st.markdown('<div class="field-note">Describe the kind of game you want.</div>', unsafe_allow_html=True)
     user_query = st.text_area(
-        "Describe what you want",
+        "Query",
         placeholder="Strategic engine-building game with strong replayability and low direct conflict",
-        height=110,
+        height=96,
+        label_visibility="collapsed",
     )
     game = ""
+
+st.markdown('<div class="filters-label">Filters</div>', unsafe_allow_html=True)
 
 col1, col2 = st.columns(2)
 
@@ -268,8 +432,14 @@ if selected_cluster_desc != "All clusters":
 
 st.markdown('</div>', unsafe_allow_html=True)
 
-# Results header
-st.markdown('<div class="section-title">Recommendations</div>', unsafe_allow_html=True)
+st.markdown(
+    """
+    <div class="results-header">
+        <div class="results-title">Recommendations</div>
+    </div>
+    """,
+    unsafe_allow_html=True,
+)
 
 run_query = False
 if mode == "Game name" and game:
@@ -279,16 +449,16 @@ if mode == "Natural language query" and user_query.strip():
 
 if not run_query:
     if mode == "Game name":
-        subtitle = "Choose a seed game to generate similar recommendations."
+        subtitle = "Choose a game above to see similar recommendations."
     else:
-        subtitle = "Enter a natural-language query to generate recommendations."
+        subtitle = "Enter a natural-language query above to see matching recommendations."
 
     st.markdown(
-        f'<div class="section-subtitle">{html.escape(subtitle)}</div>',
+        f'<div class="results-subtitle">{html.escape(subtitle)}</div>',
         unsafe_allow_html=True,
     )
     st.markdown(
-        '<div class="empty-state">Your recommendations will appear here once you run a search.</div>',
+        '<div class="empty-state">Recommendations will appear here once you complete a search.</div>',
         unsafe_allow_html=True,
     )
 else:
@@ -296,14 +466,14 @@ else:
     query_value = game if mode == "Game name" else user_query
 
     if mode == "Game name":
-        context_text = f'Based on "{game}"'
-        subtitle = "Similar games with concise reasons."
+        subtitle = "Similar games with concise recommendation reasons."
+        context_text = f'Based on “{game}”'
     else:
-        context_text = f'Query: "{user_query}"'
-        subtitle = "Games that best match your natural-language search."
+        subtitle = "Games that best match your natural-language request."
+        context_text = f'Query: “{user_query}”'
 
     st.markdown(
-        f'<div class="section-subtitle">{html.escape(subtitle)}</div>',
+        f'<div class="results-subtitle">{html.escape(subtitle)}</div>',
         unsafe_allow_html=True,
     )
     st.markdown(
@@ -343,9 +513,11 @@ else:
             st.markdown(
                 f"""
                 <div class="rec-card">
-                    <div class="rec-header">
+                    <div class="rec-top">
                         <div class="rec-index">{i}</div>
-                        <div class="rec-game">{game_name}</div>
+                        <div class="rec-title-wrap">
+                            <div class="rec-title">{game_name}</div>
+                        </div>
                     </div>
                     <div class="rec-reason">{reason}</div>
                 </div>
