@@ -13,6 +13,9 @@ class RecommenderArtifacts:
     cluster_labels: dict
 
 def load_artifacts(artifacts_dir="artifacts") -> RecommenderArtifacts:
+    SVD_URL = "https://github.com/GreatAmus/boardgame_recommender/releases/tag/svd"
+    ensure_file(SVD_URL, f"{artifacts_dir}/svd.joblib")
+    
     df = pd.read_parquet(f"{artifacts_dir}/games.parquet")
     X = np.load(f"{artifacts_dir}/X.npy")
 
