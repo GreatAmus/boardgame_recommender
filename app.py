@@ -7,74 +7,115 @@ from recommender import load_artifacts, recommend, gemini_explain
 
 # 1. Page Config
 st.set_page_config(
-    page_title="Board Game Pro",
-    page_icon="🎯",
+    page_title="Board Game Index",
+    page_icon="📋",
     layout="wide",
 )
 
-# 2. Ultra-Compact Editorial CSS
+# 2. Optimized High-Density CSS
 st.markdown("""
     <style>
-        /* Pro Sans-Serif Stack */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
         
         html, body, [class*="css"] {
             font-family: 'Inter', sans-serif;
-            color: #334155;
+            color: #1e293b;
         }
 
         .block-container {
-            padding: 1.5rem 3rem !important;
+            padding: 1rem 3rem !important;
             max-width: 1400px;
         }
 
-        /* Header Area */
-        .header-ui {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
+        /* Top Header */
+        .top-bar {
             border-bottom: 2px solid #f1f5f9;
-            padding-bottom: 1rem;
+            padding-bottom: 0.5rem;
             margin-bottom: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
         }
 
-        /* The Data Table */
-        .game-row {
+        .top-bar h1 {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: #0f172a;
+            margin: 0;
+        }
+
+        /* The Editorial Table Style */
+        .rec-row {
             display: grid;
-            grid-template-columns: 50px 220px 1fr 180px 100px;
-            gap: 20px;
+            grid-template-columns: 40px 220px 1fr 180px;
+            gap: 15px;
+            padding: 12px 15px;
+            border-bottom: 1px solid #f1f5f9;
             align-items: center;
-            padding: 12px 16px;
-            border-radius: 8px;
-            margin-bottom: 4px;
-            background: #ffffff;
-            border: 1px solid #f1f5f9;
+            background: white;
         }
 
-        .game-row:hover {
-            border-color: #cbd5e1;
+        .rec-row:hover {
             background-color: #f8fafc;
         }
 
-        .rank { font-weight: 700; color: #94a3b8; font-size: 0.9rem; }
-        .name { font-weight: 700; color: #0f172a; font-size: 0.95rem; }
-        .reason { color: #475569; font-size: 0.9rem; line-height: 1.4; }
-        .genre { font-size: 0.75rem; font-weight: 600; color: #64748b; text-transform: uppercase; background: #f1f5f9; padding: 4px 8px; border-radius: 4px; text-align: center; }
-        
-        /* Match Bar */
-        .match-container { background: #e2e8f0; height: 6px; border-radius: 10px; width: 100%; position: relative; }
-        .match-bar { background: #6366f1; height: 6px; border-radius: 10px; }
+        .rec-rank {
+            font-weight: 700;
+            color: #94a3b8;
+            font-size: 0.9rem;
+        }
 
-        /* Sidebar Clean-up */
-        [data-testid="stSidebar"] { background-color: #ffffff !important; border-right: 1px solid #e2e8f0; }
-        .stSlider { margin-bottom: 2rem !important; }
+        .rec-name {
+            font-weight: 700;
+            font-size: 0.95rem;
+            color: #0f172a;
+        }
+
+        .rec-reason {
+            font-size: 0.9rem;
+            color: #475569;
+            line-height: 1.5;
+        }
+
+        .rec-tag {
+            font-size: 0.7rem;
+            font-weight: 700;
+            background: #f1f5f9;
+            padding: 4px 8px;
+            border-radius: 4px;
+            text-align: center;
+            text-transform: uppercase;
+            color: #64748b;
+        }
+
+        /* Sidebar & Button Styling */
+        [data-testid="stSidebar"] {
+            background-color: #ffffff !important;
+            border-right: 1px solid #e2e8f0;
+        }
+        
+        div.stButton > button {
+            width: 100%;
+            background-color: #6366f1;
+            color: white;
+            border: none;
+            padding: 0.5rem;
+            font-weight: 600;
+            border-radius: 6px;
+        }
+        
+        div.stButton > button:hover {
+            background-color: #4f46e5;
+            color: white;
+        }
     </style>
 """, unsafe_allow_html=True)
 
-# 3. Backend Integration
+# 3. Data Core
 @st.cache_resource
 def load():
-    if "SVD_URL" in st.secrets: os.environ["SVD_URL"] = st.secrets["SVD_URL"]
+    if "SVD_URL" in st.secrets:
+        os.environ["SVD_URL"] = st.secrets["SVD_URL"]
     return load_artifacts("artifacts")
 
 @st.cache_data(show_spinner=False)
@@ -87,79 +128,83 @@ all_games = sorted(art.df["game_name"].dropna().unique().tolist())
 cluster_options = ["All Genres"] + [art.cluster_labels[k] for k in sorted(art.cluster_labels)]
 desc_to_id = {v: k for k, v in art.cluster_labels.items()}
 
-# 4. Sidebar Nav
+# 4. Sidebar Nav with Form (Search Button)
 with st.sidebar:
-    st.markdown("### Search Parameters")
-    mode = st.toggle("Switch to Natural Language Search", value=False)
+    st.subheader("Search Engine")
     
-    if not mode:
-        game = st.selectbox("Based on this game:", all_games)
-        user_query = ""
-    else:
-        user_query = st.text_area("Describe your ideal game:", placeholder="Example: Economic engine builder with high player interaction")
-        game = ""
+    # Toggle switch outside the form so it resets the fields appropriately
+    mode = st.toggle("Natural Language Mode", value=False)
+    
+    with st.form("search_form"):
+        if not mode:
+            game_input = st.selectbox("Based on this game:", all_games)
+            query_input = ""
+        else:
+            query_input = st.text_area("Describe the gameplay:", placeholder="e.g. Cooperative dungeon crawler with deck building")
+            game_input = ""
 
-    st.divider()
-    top_n = st.slider("Result Count", 5, 20, 8)
-    sentiment_weight = st.slider("Vibe Weight", 0.0, 1.0, 0.25)
-    selected_cluster = st.selectbox("Genre Filter", cluster_options)
-    cluster_id = desc_to_id[selected_cluster] if selected_cluster != "All Genres" else None
+        st.divider()
+        top_n = st.slider("Results", 5, 20, 10)
+        sentiment_weight = st.slider("Vibe Weight", 0.0, 1.0, 0.2)
+        selected_cluster = st.selectbox("Genre Filter", cluster_options)
+        
+        # The Manual Search Button
+        submit_button = st.form_submit_button("Find Games")
 
-# 5. Main Dashboard
+cluster_id = desc_to_id[selected_cluster] if selected_cluster != "All Genres" else None
+
+# 5. Main Layout
 st.markdown("""
-    <div class="header-ui">
-        <h2 style="margin:0; font-weight:800; letter-spacing:-1px;">MeepleMind <span style="color:#6366f1;">Pro</span></h2>
-        <div style="font-size:0.85rem; color:#94a3b8; font-weight:500;">LIVE DATABASE INDEX v2.4</div>
+    <div class="top-bar">
+        <h1>Board Game Index</h1>
+        <div style="font-size: 0.8rem; color: #94a3b8; font-weight: 600;">SEARCH & DISCOVERY TERMINAL</div>
     </div>
 """, unsafe_allow_html=True)
 
-run_query = (not mode and game) or (mode and user_query.strip())
-
-if not run_query:
-    st.info("Select a game or enter a query in the sidebar to generate recommendations.")
+# Run query ONLY when button is clicked
+if not submit_button:
+    st.info("👈 Configure your search in the sidebar and click 'Find Games' to begin.")
 else:
     q_type = "game_name" if not mode else "text_query"
-    q_val = game if not mode else user_query.strip()
+    q_val = game_input if not mode else query_input.strip()
 
-    try:
-        with st.spinner("Processing..."):
-            recs = recommend(art, q_type, q_val, sentiment_weight, cluster_id, top_n)
-            
-            # AI reasoning
+    if q_type == "text_query" and not q_val:
+        st.warning("Please enter a description before searching.")
+    else:
+        try:
+            with st.spinner("Fetching matches..."):
+                recs = recommend(art, q_type, q_val, sentiment_weight, cluster_id, top_n)
+
             if "GEMINI_API_KEY" in st.secrets:
-                reasons_df = cached_gemini_explain(st.secrets["GEMINI_API_KEY"], recs.to_csv(index=False), game, user_query.strip())
+                reasons_df = cached_gemini_explain(
+                    st.secrets["GEMINI_API_KEY"], recs.to_csv(index=False), game_input, query_input.strip()
+                )
             else:
                 reasons_df = recs[["game_name"]].copy()
-                reasons_df["reason"] = "Reasoning unavailable (No API Key)."
+                reasons_df["reason"] = "Add GEMINI_API_KEY for AI analysis."
 
             display_df = recs.merge(reasons_df, on="game_name", how="left")
 
-        # Table Header
-        st.markdown("""
-            <div style="display: grid; grid-template-columns: 50px 220px 1fr 180px 100px; gap: 20px; padding: 10px 16px; color: #94a3b8; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">
-                <div>Rank</div>
-                <div>Game Name</div>
-                <div>AI Recommendation Logic</div>
-                <div style="text-align:center;">Genre</div>
-                <div>Match Score</div>
-            </div>
-        """, unsafe_allow_html=True)
-
-        for i, row in enumerate(display_df.itertuples(index=False), start=1):
-            # Normalize score for the bar (assuming scores are roughly 0-1)
-            score_pct = min(max(row.score * 100, 10), 100)
-            
-            st.markdown(f"""
-                <div class="game-row">
-                    <div class="rank">#{i:02d}</div>
-                    <div class="name">{html.escape(row.game_name)}</div>
-                    <div class="reason">{html.escape(row.reason)}</div>
-                    <div class="genre">{html.escape(str(row.cluster_label))}</div>
-                    <div class="match-container">
-                        <div class="match-bar" style="width: {score_pct}%;"></div>
-                    </div>
+            # Table Header
+            st.markdown("""
+                <div style="display: grid; grid-template-columns: 40px 220px 1fr 180px; gap: 15px; padding: 8px 15px; background: #0f172a; color: white; border-radius: 4px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">
+                    <div>#</div>
+                    <div>Game Title</div>
+                    <div>Recommendation Logic</div>
+                    <div style="text-align: center;">Genre</div>
                 </div>
             """, unsafe_allow_html=True)
 
-    except Exception as e:
-        st.error(f"Engine Error: {e}")
+            # Rows
+            for i, row in enumerate(display_df.itertuples(index=False), start=1):
+                st.markdown(f"""
+                    <div class="rec-row">
+                        <div class="rec-rank">{i}</div>
+                        <div class="rec-name">{html.escape(row.game_name)}</div>
+                        <div class="rec-reason">{html.escape(row.reason)}</div>
+                        <div class="rec-tag">{html.escape(str(row.cluster_label))}</div>
+                    </div>
+                """, unsafe_allow_html=True)
+
+        except Exception as e:
+            st.error(f"Search failed: {e}")
