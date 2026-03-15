@@ -103,10 +103,11 @@ st.markdown(
         .surface-card,
         .result-card,
         .empty-card {
-            padding: 1.2rem;
-            color: var(--muted);
-            font-size: 0.96rem;
-            line-height: 1.6;
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(16px);
         }
 
         .hero-card {
@@ -334,7 +335,7 @@ st.markdown(
 
         div[data-testid="stRadio"] label:has(input:checked) {
             background: rgba(129, 140, 248, 0.14) !important;
-            color: #eef2ff !important;
+            color: #1e1b4b !important;
             box-shadow: inset 0 0 0 1px rgba(129, 140, 248, 0.18);
         }
 
@@ -499,9 +500,9 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-st.markdown('<div class="layout-grid">', unsafe_allow_html=True)
+left_col, right_col = st.columns([1, 2], gap="large")
 
-with st.container():
+with left_col:
     st.markdown('<div class="surface-card">', unsafe_allow_html=True)
     st.markdown('<div class="section-title">Search controls</div>', unsafe_allow_html=True)
     st.markdown(
@@ -530,7 +531,10 @@ with st.container():
             height=120,
             help="Describe mechanics, mood, complexity, player interaction, or replayability.",
         )
-        game = ""    st.markdown('<div class="filter-row">', unsafe_allow_html=True)
+        game = ""
+
+    st.markdown('<div class="filter-row">', unsafe_allow_html=True)
+
     top_n = st.slider(
         "Number of recommendations",
         min_value=3,
@@ -547,7 +551,8 @@ with st.container():
         step=0.05,
         help="Higher values give more influence to review sentiment in the ranking.",
     )
-    st.markdown('</div>', unsafe_allow_html=True)
+
+    st.markdown("</div>", unsafe_allow_html=True)
 
     selected_cluster_desc = st.selectbox(
         "Cluster",
@@ -563,7 +568,7 @@ with st.container():
         '<div class="footer-note">Tip: natural-language search works best when you mention mechanics, complexity, pacing, or interaction style.</div>',
         unsafe_allow_html=True,
     )
-    st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
 
 run_query = False
 if mode == "Game name" and game:
@@ -571,7 +576,7 @@ if mode == "Game name" and game:
 if mode == "Natural language query" and user_query.strip():
     run_query = True
 
-with st.container():
+with right_col:
     st.markdown('<div class="surface-card">', unsafe_allow_html=True)
 
     if mode == "Game name":
@@ -649,6 +654,4 @@ with st.container():
         except Exception as e:
             st.error(str(e))
 
-    st.markdown('</div>', unsafe_allow_html=True)
-
-st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown("</div>", unsafe_allow_html=True)
