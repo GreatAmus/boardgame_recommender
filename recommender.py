@@ -5,6 +5,8 @@ import joblib
 from sklearn.pipeline import make_pipeline
 from sklearn.metrics.pairwise import cosine_similarity
 from downloader import ensure_file
+import json
+import urllib.request
 
 @dataclass
 class RecommenderArtifacts:
@@ -97,3 +99,56 @@ def recommend(art: RecommenderArtifacts,
     out["cluster_label"] = out["cluster"].map(art.cluster_labels).fillna("Unlabeled")
 
     return out.sort_values("combined_score", ascending=False).reset_index(drop=True)
+                  def format_recs_for_prompt(seed_game: str, rec_df: pd.DataFrame) -> str:
+    lines = [f"Seed game: {seed_game}", "Recommendations:"]
+    for r in rec_df.itertuples(index=False):
+        score = getattr(r, "score", getattr(r, "combined_score", None))
+        score_s = f"{score:.4f}" if isinstance(score, (int, float)) else str(score)
+
+        sentiment = getattr(r, "sentiment", None)
+        sent_s = f"{sentiment:.3f}" if isinstance(sentiment, (int, float)) else str(sentiment)
+
+        lines.append(
+            f"- {r.game_name} (cluster={getattr(r,'cluster',None)}, sentiment={sent_s}, score={score_s})"
+        )
+    return "\n".join(lines)  # <-- important
+
+
+def gemini_explain(api_key: str, seed_game: str, rec_df: pd.DataFrame) -> str:
+    """
+    Calls Gemini to explain recommendations.
+    api_key comes from Streamlit secrets: st.secrets["GEMINI_API_KEY"]
+    """
+    model = "gemini-2.0-flash"
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
+
+    prompt = (
+        "You are helping explain board game recommendations. "
+        "Give 1-2 concise reasons per recommendation, referencing mechanics/themes implied by text for each listed game. "
+        "Format the output so each recommended game is shown along with its reason(s). "
+        "Do not return an introductory sentence.\n\n"
+        + format_recs_for_prompt(seed_game, rec_df)
+    )
+
+    payload = {
+        "contents": [{"parts": [{"text": prompt}]}],
+        "generationConfig": {"temperature": 0.4, "maxOutputTokens": 350},
+    }
+
+    req = urllib.request.Request(
+        url,
+        data=json.dumps(payload).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+    except Exception as e:
+        return f"Error calling Gemini: {e}"
+
+    try:
+        return data["candidates"][0]["content"]["parts"][0]["text"].strip()
+    except Exception:
+        return "Gemini returned an unexpected response format."
