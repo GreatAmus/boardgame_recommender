@@ -10,7 +10,7 @@ from recommender import load_artifacts, recommend, gemini_explain
 
 st.set_page_config(
     page_title="Board Game Recommender",
-    layout="wide",
+    layout="centered",
 )
 
 
@@ -36,71 +36,74 @@ art = load()
 df = art.df
 
 
-# ---------- STYLING ----------
 st.markdown(
     """
     <style>
         .block-container {
+            max-width: 860px;
             padding-top: 2rem;
             padding-bottom: 3rem;
-            max-width: 1000px;
         }
 
         h1, h2, h3 {
             letter-spacing: -0.02em;
         }
 
-        .results-wrap {
-            margin-top: 0.5rem;
-        }
-
-        .results-divider {
-            border-top: 1px solid #e5e7eb;
-            margin: 1.25rem 0 1.5rem 0;
-        }
-
-        .results-subtitle {
+        .page-subtitle {
             color: #6b7280;
-            font-size: 0.98rem;
+            font-size: 1rem;
             margin-top: -0.35rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .context-line {
+            color: #374151;
+            font-size: 0.98rem;
             margin-bottom: 1.25rem;
         }
 
-        .rec-item {
-            padding: 0.85rem 0 1rem 0;
-            border-bottom: 1px solid #eceff3;
+        .divider {
+            border-top: 1px solid #e5e7eb;
+            margin: 1rem 0 1.4rem 0;
         }
 
-        .rec-line {
-            font-size: 1.03rem;
-            line-height: 1.65;
+        .result-row {
+            padding: 0.95rem 0 1rem 0;
+            border-bottom: 1px solid #f0f2f5;
+        }
+
+        .result-title {
+            font-size: 1.06rem;
+            font-weight: 700;
             color: #111827;
+            margin-bottom: 0.3rem;
+            line-height: 1.35;
+        }
+
+        .result-reason {
+            font-size: 0.98rem;
+            color: #374151;
+            line-height: 1.6;
             white-space: normal;
             overflow-wrap: break-word;
             word-break: break-word;
         }
 
-        .rec-num {
-            font-weight: 700;
-            color: #111827;
-        }
-
-        .rec-game {
-            font-weight: 700;
-            color: #111827;
-        }
-
-        .rec-reason {
-            color: #374151;
-        }
-
-        .small-note {
+        .empty-note {
             color: #6b7280;
-            font-size: 0.92rem;
+            font-size: 0.98rem;
+            margin-top: 1rem;
         }
 
         section[data-testid="stSidebar"] {
             border-right: 1px solid #eceff3;
+        }
+
+        section[data-testid="stSidebar"] .stRadio > label,
+        section[data-testid="stSidebar"] .stSelectbox > label,
+        section[data-testid="stSidebar"] .stTextArea > label,
+        section[data-testid="stSidebar"] .stSlider > label {
+            font-weight: 600;
         }
     </style>
     """,
@@ -108,13 +111,11 @@ st.markdown(
 )
 
 
-# ---------- SIDEBAR ----------
 with st.sidebar:
-    st.title("Board Game Recommender")
-    st.caption("Search settings")
+    st.header("Search")
 
     mode = st.radio(
-        "Search mode",
+        "Mode",
         ["Game name", "Natural language query"],
         index=0,
     )
@@ -146,25 +147,12 @@ with st.sidebar:
         desc_to_id = {v: k for k, v in art.cluster_labels.items()}
         cluster_id = desc_to_id[selected_cluster_desc]
 
-    st.markdown("---")
-    st.caption("Recommendations update automatically when you change the search.")
 
-
-# ---------- MAIN ----------
-st.title("Recommendations")
-
-if mode == "Game name":
-    st.markdown(
-        '<div class="results-subtitle">Choose a seed game in the sidebar to find similar games.</div>',
-        unsafe_allow_html=True,
-    )
-else:
-    st.markdown(
-        '<div class="results-subtitle">Enter a natural language query in the sidebar to find matching games.</div>',
-        unsafe_allow_html=True,
-    )
-
-st.markdown('<div class="results-divider"></div>', unsafe_allow_html=True)
+st.title("Board Game Recommender")
+st.markdown(
+    '<div class="page-subtitle">Find recommended games from review-based similarity and concise natural-language explanations.</div>',
+    unsafe_allow_html=True,
+)
 
 run_query = False
 if mode == "Game name" and game:
@@ -174,12 +162,33 @@ if mode == "Natural language query" and user_query.strip():
 
 if not run_query:
     if mode == "Game name":
-        st.info("Pick a game in the sidebar to generate recommendations.")
+        context_text = "Select a game in the sidebar to see recommendations."
     else:
-        st.info("Enter a description in the sidebar to generate recommendations.")
+        context_text = "Enter a natural-language query in the sidebar to see recommendations."
+
+    st.markdown(
+        f'<div class="context-line">{html.escape(context_text)}</div>',
+        unsafe_allow_html=True,
+    )
+    st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="empty-note">Your recommendations will appear here.</div>',
+        unsafe_allow_html=True,
+    )
 else:
     query_type = "game_name" if mode == "Game name" else "text_query"
     query_value = game if mode == "Game name" else user_query
+
+    if mode == "Game name":
+        context_text = f'Showing recommendations based on: "{game}"'
+    else:
+        context_text = f'Showing recommendations for: "{user_query}"'
+
+    st.markdown(
+        f'<div class="context-line">{html.escape(context_text)}</div>',
+        unsafe_allow_html=True,
+    )
+    st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
 
     try:
         recs = recommend(
@@ -206,33 +215,19 @@ else:
         display_df = recs[["game_name"]].merge(reasons_df, on="game_name", how="left")
         display_df["reason"] = display_df["reason"].fillna("No explanation returned.")
 
-        if mode == "Game name":
-            st.subheader(f'Based on "{game}"')
-            st.caption("Recommended games and why they are similar.")
-        else:
-            st.subheader("Based on your query")
-            st.caption(f'"{user_query}"')
-
-        st.markdown('<div class="results-wrap">', unsafe_allow_html=True)
-
         for i, row in enumerate(display_df.itertuples(index=False), start=1):
             game_name = html.escape(str(row.game_name))
             reason = html.escape(str(row.reason))
 
             st.markdown(
                 f"""
-                <div class="rec-item">
-                    <div class="rec-line">
-                        <span class="rec-num">{i}.</span>
-                        <span class="rec-game">{game_name}</span>
-                        <span class="rec-reason"> — {reason}</span>
-                    </div>
+                <div class="result-row">
+                    <div class="result-title">{i}. {game_name}</div>
+                    <div class="result-reason">{reason}</div>
                 </div>
                 """,
                 unsafe_allow_html=True,
             )
-
-        st.markdown("</div>", unsafe_allow_html=True)
 
     except Exception as e:
         st.error(str(e))
