@@ -189,14 +189,11 @@ def gemini_explain(
         task_context = "Explain why each recommendation is a good match for the user's natural language query."
 
     prompt = (
-        "You are helping explain board game recommendations.\n"
-        f"{task_context}\n"
-        "For each recommended game, give 1 concise reason in plain English.\n"
-        "Return ONLY valid JSON in this exact format:\n"
-        '[{"game_name": "name here", "reason": "reason here"}]\n'
-        "Do not include markdown fences. Do not include any text before or after the JSON.\n\n"
-        + format_recs_for_prompt(rec_df=rec_df, seed_game=seed_game, user_query=user_query)
-    )
+      "You are helping explain board game recommendations. "
+      " For each recommended game give 1-2 concise reasons per recommendation, referencing mechanics/themes implied by text for each listed game."
+      " Format the recommendations so the recommended game is shown along with the reason for the recommendation. Do not return an introductory sentence or makrdown fenses."
+      + format_recs_for_prompt(seed_game, rec_df)
+    )   
 
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
     payload = {
