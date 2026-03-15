@@ -109,31 +109,38 @@ def format_recs_for_prompt(seed_game: str, rec_df: pd.DataFrame) -> str:
         sentiment = getattr(r, "sentiment", None)
         sent_s = f"{sentiment:.3f}" if isinstance(sentiment, (int, float)) else str(sentiment)
 
+        cluster_label = getattr(r, "cluster_label", getattr(r, "cluster", None))
+
         lines.append(
-            f"- {r.game_name} (cluster={getattr(r,'cluster',None)}, sentiment={sent_s}, score={score_s})"
+            f"- {r.game_name} (cluster={cluster_label}, sentiment={sent_s}, score={score_s})"
         )
-    return "\n".join(lines)  # <-- important
+    return "\n".join(lines)
 
 
-def gemini_explain(api_key: str, seed_game: str, rec_df: pd.DataFrame) -> str:
+def gemini_explain(api_key: str, seed_game: str, rec_df: pd.DataFrame) -> pd.DataFrame:
     """
-    Calls Gemini to explain recommendations.
-    api_key comes from Streamlit secrets: st.secrets["GEMINI_API_KEY"]
+    Returns a dataframe with columns:
+    - game_name
+    - reason
     """
     model = "gemini-2.0-flash"
     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
 
     prompt = (
-        "You are helping explain board game recommendations. "
-        "Give 1-2 concise reasons per recommendation, referencing mechanics/themes implied by text for each listed game. "
-        "Format the output so each recommended game is shown along with its reason(s). "
-        "Do not return an introductory sentence.\n\n"
+        "You are helping explain board game recommendations.\n"
+        "For each recommended game, give 1 concise reason explaining why it matches the seed game.\n"
+        "Return ONLY valid JSON in this exact format:\n"
+        '[{"game_name": "name here", "reason": "reason here"}]\n'
+        "Do not include markdown fences. Do not include any text before or after the JSON.\n\n"
         + format_recs_for_prompt(seed_game, rec_df)
     )
 
     payload = {
         "contents": [{"parts": [{"text": prompt}]}],
-        "generationConfig": {"temperature": 0.4, "maxOutputTokens": 350},
+        "generationConfig": {
+            "temperature": 0.3,
+            "maxOutputTokens": 500
+        }
     }
 
     req = urllib.request.Request(
@@ -146,10 +153,23 @@ def gemini_explain(api_key: str, seed_game: str, rec_df: pd.DataFrame) -> str:
     try:
         with urllib.request.urlopen(req, timeout=30) as resp:
             data = json.loads(resp.read().decode("utf-8"))
+        text = data["candidates"][0]["content"]["parts"][0]["text"].strip()
     except Exception as e:
-        return f"Error calling Gemini: {e}"
+        return pd.DataFrame({
+            "game_name": rec_df["game_name"].tolist(),
+            "reason": [f"Could not generate explanation: {e}"] * len(rec_df)
+        })
 
     try:
-        return data["candidates"][0]["content"]["parts"][0]["text"].strip()
+        parsed = json.loads(text)
+        out = pd.DataFrame(parsed)
+
+        # Make sure every displayed recommendation keeps its row
+        merged = rec_df[["game_name"]].merge(out, on="game_name", how="left")
+        merged["reason"] = merged["reason"].fillna("No explanation returned.")
+        return merged[["game_name", "reason"]]
     except Exception:
-        return "Gemini returned an unexpected response format."
+        return pd.DataFrame({
+            "game_name": rec_df["game_name"].tolist(),
+            "reason": [text] * len(rec_df)
+        })
