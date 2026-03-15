@@ -191,7 +191,7 @@ def gemini_explain(
     prompt = (
       "You are helping explain board game recommendations. "
       " For each recommended game give 1-2 concise reasons per recommendation, referencing mechanics/themes implied by text for each listed game."
-      " Format the recommendations so the recommended game is shown along with the reason for the recommendation. Do not return an introductory sentence or makrdown fenses."
+      " Format the recommendations so the recommended game is shown along with the reason for the recommendation. Do not return an introductory sentence or makrdown fences."
       + format_recs_for_prompt(seed_game, rec_df)
     )   
 
