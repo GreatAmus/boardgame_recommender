@@ -175,55 +175,49 @@ def format_recs_for_prompt(
 
     return "\n".join(lines)
 
-
 def gemini_explain(
     api_key: str,
     rec_df: pd.DataFrame,
-    seed_game: str | None = None,
-    user_query: str | None = None,
-    model: str = "gemini-2.0-flash",
+    seed_game: Optional[str] = None,
+    user_query: Optional[str] = None,
 ) -> pd.DataFrame:
-    if seed_game:
-        task_context = "Explain why each recommendation is a good match for the selected seed game."
-    else:
-        task_context = "Explain why each recommendation is a good match for the user's natural language query."
+    client = genai.Client(api_key=api_key)
 
+    context = seed_game or user_query or "the user's request"
+
+    # Keep the prompt simple and deterministic.
     prompt = (
-      "You are helping explain board game recommendations. "
-      " For each recommended game give 1-2 concise reasons per recommendation, referencing mechanics/themes implied by text for each listed game."
-      " Format the recommendations so the recommended game is shown along with the reason for the recommendation. Do not return an introductory sentence or makrdown fences."
-      + format_recs_for_prompt(seed_game, rec_df)
-    )   
-
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
-    payload = {
-        "contents": [{"parts": [{"text": prompt}]}],
-        "generationConfig": {"temperature": 0.3, "maxOutputTokens": 500},
-    }
-
-    req = urllib.request.Request(
-        url,
-        data=json.dumps(payload).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
-        method="POST",
+        "You explain board game recommendations.\n"
+        "Return JSON only.\n"
+        "For each recommended game, provide 1-2 concise reasons.\n"
+        "Reasons should reference mechanics, themes, or play feel implied by the recommendation data.\n"
+        "Do not add introductory text.\n\n"
+        f"Context: {context}\n\n"
+        "Recommended games:\n"
+        + "\n".join(f"- {name}" for name in rec_df["game_name"].tolist())
     )
 
-    try:
-        with urllib.request.urlopen(req, timeout=30) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-        text = data["candidates"][0]["content"]["parts"][0]["text"].strip()
-    except Exception as e:
-        fallback = rec_df[["game_name"]].copy()
-        fallback["reason"] = f"Could not generate explanation: {e}"
-        return fallback
+    response = client.models.generate_content(
+        model="gemini-2.0-flash",
+        contents=prompt,
+        config=types.GenerateContentConfig(
+            response_mime_type="application/json",
+            response_schema=RecommendationReasons,
+            temperature=0.2,
+        ),
+    )
 
-    try:
-        parsed = json.loads(text)
-        out = pd.DataFrame(parsed)
-        merged = rec_df[["game_name"]].merge(out, on="game_name", how="left")
-        merged["reason"] = merged["reason"].fillna("No explanation returned.")
-        return merged[["game_name", "reason"]]
-    except Exception:
-        fallback = rec_df[["game_name"]].copy()
-        fallback["reason"] = text
-        return fallback
+    parsed = response.parsed
+    if parsed is None:
+        raise RuntimeError("Gemini returned no structured output.")
+
+    out_df = pd.DataFrame(
+        [{"game_name": r.game_name, "reason": r.reason} for r in parsed.recommendations]
+    )
+
+    # Preserve original order and guarantee one row per recommendation.
+    final_df = rec_df[["game_name"]].merge(out_df, on="game_name", how="left")
+    final_df["reason"] = final_df["reason"].fillna(
+        "Recommended based on similarity to your search."
+    )
+    return final_df
