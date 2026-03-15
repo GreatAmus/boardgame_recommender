@@ -4,6 +4,7 @@ import pandas as pd
 import joblib
 from sklearn.pipeline import make_pipeline
 from sklearn.metrics.pairwise import cosine_similarity
+from downloader import ensure_file
 
 @dataclass
 class RecommenderArtifacts:
