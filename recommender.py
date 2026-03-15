@@ -207,7 +207,7 @@ def gemini_explain(
     prompt = (
         "You are helping explain board game recommendations.\n"
         f"{task_context}\n"
-        "For each recommended game, give 1 concise reason in plain English.\n"
+        "For each recommended game, give 1-2 concise reasons for the recommendation in plain English.\n"
         "Return ONLY valid JSON in this exact format:\n"
         '[{"game_name": "name here", "reason": "reason here"}]\n'
         "Do not include markdown fences. Do not include any text before or after the JSON.\n\n"
