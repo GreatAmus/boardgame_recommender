@@ -50,24 +50,8 @@ def load_artifacts(artifacts_dir: str = "artifacts") -> RecommenderArtifacts:
     svd_path = f"{artifacts_dir}/svd.joblib"
     norm_path = f"{artifacts_dir}/norm.joblib"
 
-    tfidf_url = os.environ.get("TFIDF_URL", "")
     svd_url = os.environ.get("SVD_URL", "")
-    norm_url = os.environ.get("NORM_URL", "")
-
-    if not os.path.exists(tfidf_path):
-        if not tfidf_url:
-            raise FileNotFoundError("Missing artifacts/tfidf.joblib and TFIDF_URL not set.")
-        ensure_file(tfidf_url, tfidf_path)
-
-    if not os.path.exists(svd_path):
-        if not svd_url:
-            raise FileNotFoundError("Missing artifacts/svd.joblib and SVD_URL not set.")
-        ensure_file(svd_url, svd_path)
-
-    if not os.path.exists(norm_path):
-        if not norm_url:
-            raise FileNotFoundError("Missing artifacts/norm.joblib and NORM_URL not set.")
-        ensure_file(norm_url, norm_path)
+    ensure_file(svd_url, svd_path)
 
     tv = joblib.load(tfidf_path)
     svd = joblib.load(svd_path)
