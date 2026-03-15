@@ -135,4 +135,68 @@ with st.sidebar:
 
     if mode == "Classic":
         game = st.selectbox("Seed Game", all_games)
-        user_query =
+        user_query = ""
+    else:
+        user_query = st.text_area("Describe the vibe...", placeholder="Heavy strategy, no luck, sci-fi theme")
+        game = ""
+
+    st.markdown("### Parameters")
+    top_n = st.select_slider("Results", options=[3, 5, 10, 15], value=5)
+    sentiment_weight = st.slider("Sentiment Influence", 0.0, 1.0, 0.2)
+    selected_cluster = st.selectbox("Genre Filter", cluster_options)
+    cluster_id = desc_to_id[selected_cluster] if selected_cluster != "All Genres" else None
+
+# 5. Main Layout
+st.markdown("""
+    <div class="hero">
+        <h1>MeepleMind.exe</h1>
+        <p style="color: #94a3b8;">Strategic Recommendation Engine v2.0</p>
+    </div>
+""", unsafe_allow_html=True)
+
+run_query = (mode == "Classic" and game) or (mode == "Vibe Search" and user_query.strip())
+
+if not run_query:
+    st.markdown("""
+        <div style="text-align: center; padding: 4rem; color: #475569;">
+            <h3>Awaiting input parameters...</h3>
+            <p>Select a seed game or enter a vibe in the sidebar to begin. </p>
+        </div>
+    """, unsafe_allow_html=True)
+else:
+    q_type = "game_name" if mode == "Classic" else "text_query"
+    q_val = game if mode == "Classic" else user_query.strip()
+
+    try:
+        with st.spinner("Processing Vectors..."):
+            recs = recommend(art, q_type, q_val, sentiment_weight, cluster_id, top_n)
+
+        if "GEMINI_API_KEY" in st.secrets:
+            with st.spinner("Synthesizing Reasons..."):
+                reasons_df = cached_gemini_explain(
+                    st.secrets["GEMINI_API_KEY"], 
+                    recs.to_csv(index=False), 
+                    game, 
+                    user_query.strip()
+                )
+        else:
+            reasons_df = recs[["game_name"]].copy()
+            reasons_df["reason"] = "API Key required for AI analysis."
+
+        display_df = recs.merge(reasons_df, on="game_name", how="left")
+
+        # Display Results in a Clean Vertical Stack
+        for i, row in enumerate(display_df.itertuples(index=False), start=1):
+            st.markdown(f"""
+                <div class="game-card">
+                    <div class="rank-num">RECOMMENDATION #{i:02d}</div>
+                    <div class="title-text">{html.escape(row.game_name)}</div>
+                    <div class="reason-box">
+                        “{html.escape(row.reason)}”
+                    </div>
+                    <div class="genre-tag">{html.escape(str(row.cluster_label))}</div>
+                </div>
+            """, unsafe_allow_html=True)
+
+    except Exception as e:
+        st.error(f"Engine Failure: {e}")
