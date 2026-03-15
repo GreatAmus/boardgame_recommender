@@ -44,22 +44,22 @@ st.markdown(
     """
     <style>
         :root {
-            --bg: #0b1020;
-            --bg-accent: radial-gradient(circle at top left, rgba(99, 102, 241, 0.18), transparent 35%),
-                         radial-gradient(circle at top right, rgba(16, 185, 129, 0.12), transparent 30%),
-                         linear-gradient(180deg, #0b1020 0%, #0f172a 100%);
-            --panel: rgba(15, 23, 42, 0.78);
-            --panel-2: rgba(255, 255, 255, 0.04);
-            --panel-solid: #111827;
-            --border: rgba(255, 255, 255, 0.08);
-            --border-strong: rgba(255, 255, 255, 0.14);
-            --text: #e5e7eb;
-            --muted: #94a3b8;
-            --accent: #818cf8;
-            --accent-strong: #6366f1;
-            --accent-soft: rgba(129, 140, 248, 0.14);
-            --success-soft: rgba(16, 185, 129, 0.14);
-            --shadow: 0 20px 50px rgba(0, 0, 0, 0.28);
+            --bg: #f3f6fb;
+            --bg-accent: radial-gradient(circle at top left, rgba(99, 102, 241, 0.10), transparent 30%),
+                         radial-gradient(circle at top right, rgba(16, 185, 129, 0.08), transparent 26%),
+                         linear-gradient(180deg, #f8fbff 0%, #eef3f9 100%);
+            --panel: rgba(255, 255, 255, 0.88);
+            --panel-2: rgba(99, 102, 241, 0.06);
+            --panel-solid: #ffffff;
+            --border: rgba(15, 23, 42, 0.08);
+            --border-strong: rgba(15, 23, 42, 0.14);
+            --text: #0f172a;
+            --muted: #475569;
+            --accent: #6366f1;
+            --accent-strong: #4f46e5;
+            --accent-soft: rgba(99, 102, 241, 0.10);
+            --success-soft: rgba(16, 185, 129, 0.10);
+            --shadow: 0 18px 40px rgba(15, 23, 42, 0.08);
             --radius-xl: 24px;
             --radius-lg: 18px;
             --radius-md: 14px;
@@ -103,11 +103,10 @@ st.markdown(
         .surface-card,
         .result-card,
         .empty-card {
-            background: var(--panel);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-xl);
-            box-shadow: var(--shadow);
-            backdrop-filter: blur(16px);
+            padding: 1.2rem;
+            color: var(--muted);
+            font-size: 0.96rem;
+            line-height: 1.6;
         }
 
         .hero-card {
@@ -124,7 +123,7 @@ st.markdown(
             gap: 0.55rem;
             background: var(--panel-2);
             border: 1px solid var(--border);
-            color: #c7d2fe;
+            color: var(--accent-strong);
             border-radius: 999px;
             padding: 0.45rem 0.8rem;
             font-size: 0.82rem;
@@ -138,7 +137,7 @@ st.markdown(
             line-height: 1.04;
             letter-spacing: -0.04em;
             font-weight: 800;
-            color: #f8fafc;
+            color: #0f172a;
         }
 
         .hero-subtitle {
@@ -170,7 +169,7 @@ st.markdown(
         }
 
         .stat-value {
-            color: #f8fafc;
+            color: #0f172a;
             font-size: 1.35rem;
             font-weight: 800;
             letter-spacing: -0.02em;
@@ -190,7 +189,7 @@ st.markdown(
         .section-title {
             font-size: 1rem;
             font-weight: 800;
-            color: #f8fafc;
+            color: #0f172a;
             margin: 0 0 0.2rem 0;
             letter-spacing: -0.02em;
         }
@@ -207,8 +206,8 @@ st.markdown(
             align-items: center;
             gap: 0.4rem;
             background: var(--accent-soft);
-            color: #c7d2fe;
-            border: 1px solid rgba(129, 140, 248, 0.24);
+            color: #3730a3;
+            border: 1px solid rgba(99, 102, 241, 0.16);
             border-radius: 999px;
             padding: 0.45rem 0.75rem;
             font-size: 0.84rem;
@@ -227,7 +226,7 @@ st.markdown(
         .results-title {
             font-size: 1.08rem;
             font-weight: 800;
-            color: #f8fafc;
+            color: #0f172a;
             letter-spacing: -0.02em;
             margin: 0;
         }
@@ -247,8 +246,8 @@ st.markdown(
 
         .result-card:hover {
             transform: translateY(-2px);
-            border-color: rgba(129, 140, 248, 0.32);
-            background: rgba(15, 23, 42, 0.9);
+            border-color: rgba(99, 102, 241, 0.22);
+            background: rgba(255, 255, 255, 0.96);
         }
 
         .result-row {
@@ -262,18 +261,18 @@ st.markdown(
             width: 44px;
             height: 44px;
             border-radius: 14px;
-            background: linear-gradient(135deg, rgba(99, 102, 241, 0.22), rgba(16, 185, 129, 0.18));
-            border: 1px solid rgba(129, 140, 248, 0.2);
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.14), rgba(16, 185, 129, 0.10));
+            border: 1px solid rgba(99, 102, 241, 0.16);
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #eef2ff;
+            color: #312e81;
             font-weight: 800;
             font-size: 0.95rem;
         }
 
         .game-title {
-            color: #f8fafc;
+            color: #0f172a;
             font-size: 1.08rem;
             font-weight: 800;
             letter-spacing: -0.02em;
@@ -282,7 +281,7 @@ st.markdown(
         }
 
         .game-reason {
-            color: #cbd5e1;
+            color: #334155;
             font-size: 0.95rem;
             line-height: 1.65;
             margin: 0;
@@ -342,7 +341,7 @@ st.markdown(
         .stSelectbox label,
         .stTextArea label,
         .stSlider label {
-            color: #dbe4f0 !important;
+            color: #1e293b !important;
             font-size: 0.9rem !important;
             font-weight: 700 !important;
         }
@@ -351,14 +350,15 @@ st.markdown(
         .stSelectbox > div > div,
         .stNumberInput > div > div {
             border-radius: 14px !important;
+            background: #ffffff !important;
         }
 
         .stTextArea textarea,
         .stSelectbox > div > div > div,
         .stSlider,
         .stTextInput input {
-            background-color: rgba(255, 255, 255, 0.03) !important;
-            color: #f8fafc !important;
+            background-color: transparent !important;
+            color: #0f172a !important;
         }
 
         .stSelectbox div[data-baseweb="select"] > div,
@@ -376,7 +376,7 @@ st.markdown(
         .stSlider label,
         .stMarkdown,
         .stCaption {
-            color: #f8fafc;
+            color: #0f172a;
         }
 
         .stSlider [data-baseweb="slider"] > div > div {
@@ -396,6 +396,14 @@ st.markdown(
             font-size: 0.82rem;
             margin-top: 0.6rem;
             line-height: 1.5;
+        }
+
+        .filter-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 0.85rem;
+            align-items: end;
+            margin-top: 0.35rem;
         }
 
         @media (max-width: 1100px) {
@@ -430,6 +438,10 @@ st.markdown(
             .results-toolbar {
                 flex-direction: column;
                 align-items: start;
+            }
+
+            .filter-row {
+                grid-template-columns: 1fr;
             }
         }
     </style>
@@ -518,10 +530,7 @@ with st.container():
             height=120,
             help="Describe mechanics, mood, complexity, player interaction, or replayability.",
         )
-        game = ""
-
-    st.markdown('<div style="height: 0.35rem"></div>', unsafe_allow_html=True)
-
+        game = ""    st.markdown('<div class="filter-row">', unsafe_allow_html=True)
     top_n = st.slider(
         "Number of recommendations",
         min_value=3,
@@ -538,6 +547,7 @@ with st.container():
         step=0.05,
         help="Higher values give more influence to review sentiment in the ranking.",
     )
+    st.markdown('</div>', unsafe_allow_html=True)
 
     selected_cluster_desc = st.selectbox(
         "Cluster",
@@ -592,7 +602,7 @@ with st.container():
         st.markdown(
             """
             <div class="empty-card">
-                <strong style="color:#f8fafc; display:block; margin-bottom:0.45rem;">Start with a search</strong>
+                <strong style="color:#0f172a; display:block; margin-bottom:0.45rem;">Start with a search</strong>
                 Recommendations will appear here once you either choose a seed game or enter a natural-language query.
                 <ul class="hint-list">
                     <li>Use <strong>Game name</strong> when you want titles similar to a favorite game.</li>
