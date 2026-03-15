@@ -5,104 +5,108 @@ import pandas as pd
 import streamlit as st
 from recommender import load_artifacts, recommend, gemini_explain
 
-# 1. Page Config
+# 1. Page Config - Using "Wide" but controlling max-width via CSS
 st.set_page_config(
-    page_title="MeepleMind | Night Mode",
-    page_icon="♟️",
+    page_title="Board Game Index",
+    page_icon="📋",
     layout="wide",
 )
 
-# 2. Immersive CSS
+# 2. High-Density / High-Readability CSS
 st.markdown("""
     <style>
-        /* Modern Dark Theme Overrides */
-        .stApp {
-            background-color: #0f172a;
-            color: #f1f5f9;
+        /* Force a clean, professional sans-serif stack */
+        @import url('https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;700&family=Roboto:wght@400;500;700&display=swap');
+        
+        html, body, [class*="css"] {
+            font-family: 'Roboto', sans-serif;
+            color: #1a1a1a;
         }
 
-        /* Sidebar Styling */
-        [data-testid="stSidebar"] {
-            background-color: #1e293b !important;
-            border-right: 1px solid #334155;
+        /* Tighten up the Streamlit padding defaults */
+        .block-container {
+            padding-top: 1rem !important;
+            padding-bottom: 0rem !important;
+            max-width: 1400px;
         }
 
-        /* The Hero Area */
-        .hero {
-            padding: 2rem;
-            border-radius: 20px;
-            background: radial-gradient(circle at top right, #334155, #0f172a);
-            border: 1px solid #334155;
-            margin-bottom: 2rem;
-            text-align: left;
+        /* Header / Dashboard Bar */
+        .top-bar {
+            background-color: #f1f5f9;
+            padding: 0.75rem 1.5rem;
+            border-bottom: 2px solid #e2e8f0;
+            margin-bottom: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-radius: 8px;
         }
 
-        .hero h1 {
-            color: #818cf8;
-            font-weight: 800;
-            margin-bottom: 0px;
-        }
-
-        /* Recommendation Cards */
-        .game-card {
-            background: #1e293b;
-            border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 1.5rem;
-            border-bottom: 4px solid #4f46e5; /* Neon accent */
-            transition: transform 0.2s ease;
-        }
-
-        .game-card:hover {
-            transform: scale(1.02);
-            background: #334155;
-        }
-
-        .rank-num {
-            font-family: 'Monospace';
-            color: #818cf8;
-            font-size: 0.8rem;
-            letter-spacing: 2px;
-            text-transform: uppercase;
-            margin-bottom: 8px;
-        }
-
-        .title-text {
-            font-size: 1.4rem;
+        .top-bar h1 {
+            font-family: 'Roboto Condensed', sans-serif;
+            font-size: 1.5rem;
+            margin: 0;
             font-weight: 700;
-            color: #ffffff;
-            margin-bottom: 12px;
-        }
-
-        .reason-box {
-            background: rgba(15, 23, 42, 0.5);
-            padding: 12px;
-            border-radius: 8px;
-            font-style: italic;
-            color: #94a3b8;
-            font-size: 0.9rem;
-            line-height: 1.5;
-        }
-
-        /* Tags */
-        .genre-tag {
-            display: inline-block;
-            margin-top: 15px;
-            padding: 4px 10px;
-            background: #4f46e5;
-            color: white;
-            border-radius: 4px;
-            font-size: 0.7rem;
-            font-weight: bold;
+            color: #0f172a;
             text-transform: uppercase;
+            letter-spacing: 1px;
         }
 
-        /* Customizing Streamlit Widgets */
-        .stButton>button {
-            width: 100%;
-            border-radius: 8px;
-            background-color: #4f46e5;
-            color: white;
+        /* Recommendation Grid - Tighter Rows */
+        .rec-row {
+            display: grid;
+            grid-template-columns: 40px 1fr 2fr 180px;
+            gap: 15px;
+            padding: 10px 15px;
+            border-bottom: 1px solid #f1f5f9;
+            align-items: center;
+            background: white;
+        }
+
+        .rec-row:hover {
+            background-color: #f8fafc;
+        }
+
+        .rec-rank {
+            font-family: 'Roboto Condensed', sans-serif;
+            font-weight: 700;
+            color: #94a3b8;
+            font-size: 1.1rem;
+        }
+
+        .rec-name {
+            font-weight: 700;
+            font-size: 1rem;
+            color: #0f172a;
+        }
+
+        .rec-reason {
+            font-size: 0.9rem;
+            color: #475569;
+            line-height: 1.4;
+            padding-right: 10px;
+        }
+
+        .rec-tag {
+            font-family: 'Roboto Condensed', sans-serif;
+            font-size: 0.75rem;
+            font-weight: 700;
+            background: #e2e8f0;
+            padding: 2px 8px;
+            border-radius: 4px;
+            text-align: center;
+            text-transform: uppercase;
+            color: #475569;
+        }
+
+        /* Compact Sidebar */
+        [data-testid="stSidebar"] {
+            background-color: #ffffff !important;
+            border-right: 1px solid #e2e8f0;
+        }
+        
+        .stSelectbox, .stSlider, .stTextArea {
+            margin-bottom: -10px !important;
         }
     </style>
 """, unsafe_allow_html=True)
@@ -124,79 +128,74 @@ all_games = sorted(art.df["game_name"].dropna().unique().tolist())
 cluster_options = ["All Genres"] + [art.cluster_labels[k] for k in sorted(art.cluster_labels)]
 desc_to_id = {v: k for k, v in art.cluster_labels.items()}
 
-# 4. Sidebar Nav
+# 4. Sidebar Nav (Condensed)
 with st.sidebar:
-    st.image("https://cdn-icons-png.flaticon.com/512/3067/3067451.png", width=80)
-    st.title("Search Terminal")
-    
-    mode = st.segmented_control(
-        "Input Mode", ["Classic", "Vibe Search"], default="Classic"
-    )
+    st.subheader("Filter Engine")
+    mode = st.radio("Search Mode", ["Title Match", "Vibe Match"], horizontal=True)
 
-    if mode == "Classic":
-        game = st.selectbox("Seed Game", all_games)
+    if mode == "Title Match":
+        game = st.selectbox("Select Game", all_games)
         user_query = ""
     else:
-        user_query = st.text_area("Describe the vibe...", placeholder="Heavy strategy, no luck, sci-fi theme")
+        user_query = st.text_area("Describe gameplay...", height=100)
         game = ""
 
-    st.markdown("### Parameters")
-    top_n = st.select_slider("Results", options=[3, 5, 10, 15], value=5)
-    sentiment_weight = st.slider("Sentiment Influence", 0.0, 1.0, 0.2)
+    st.divider()
+    top_n = st.number_input("Count", 5, 20, 10)
+    sentiment_weight = st.slider("Vibe Factor", 0.0, 1.0, 0.2)
     selected_cluster = st.selectbox("Genre Filter", cluster_options)
     cluster_id = desc_to_id[selected_cluster] if selected_cluster != "All Genres" else None
 
 # 5. Main Layout
-st.markdown("""
-    <div class="hero">
-        <h1>MeepleMind.exe</h1>
-        <p style="color: #94a3b8;">Strategic Recommendation Engine v2.0</p>
+st.markdown(f"""
+    <div class="top-bar">
+        <h1>Board Game Discovery Index</h1>
+        <div style="font-size: 0.8rem; color: #64748b;">TOTAL DATABASE: {len(art.df):,} GAMES</div>
     </div>
 """, unsafe_allow_html=True)
 
-run_query = (mode == "Classic" and game) or (mode == "Vibe Search" and user_query.strip())
+run_query = (mode == "Title Match" and game) or (mode == "Vibe Match" and user_query.strip())
 
 if not run_query:
-    st.markdown("""
-        <div style="text-align: center; padding: 4rem; color: #475569;">
-            <h3>Awaiting input parameters...</h3>
-            <p>Select a seed game or enter a vibe in the sidebar to begin. </p>
-        </div>
-    """, unsafe_allow_html=True)
+    st.write("Please provide an input in the sidebar to generate recommendations.")
 else:
-    q_type = "game_name" if mode == "Classic" else "text_query"
-    q_val = game if mode == "Classic" else user_query.strip()
+    q_type = "game_name" if mode == "Title Match" else "text_query"
+    q_val = game if mode == "Title Match" else user_query.strip()
 
     try:
-        with st.spinner("Processing Vectors..."):
+        with st.spinner("Loading results..."):
             recs = recommend(art, q_type, q_val, sentiment_weight, cluster_id, top_n)
 
         if "GEMINI_API_KEY" in st.secrets:
-            with st.spinner("Synthesizing Reasons..."):
-                reasons_df = cached_gemini_explain(
-                    st.secrets["GEMINI_API_KEY"], 
-                    recs.to_csv(index=False), 
-                    game, 
-                    user_query.strip()
-                )
+            reasons_df = cached_gemini_explain(
+                st.secrets["GEMINI_API_KEY"], recs.to_csv(index=False), game, user_query.strip()
+            )
         else:
             reasons_df = recs[["game_name"]].copy()
-            reasons_df["reason"] = "API Key required for AI analysis."
+            reasons_df["reason"] = "AI reasoning disabled."
 
         display_df = recs.merge(reasons_df, on="game_name", how="left")
 
-        # Display Results in a Clean Vertical Stack
+        # Table Header
+        st.markdown("""
+            <div style="display: grid; grid-template-columns: 40px 1fr 2fr 180px; gap: 15px; padding: 5px 15px; background: #0f172a; color: white; border-radius: 4px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase;">
+                <div>#</div>
+                <div>Game Title</div>
+                <div>Recommendation Reasoning</div>
+                <div style="text-align: center;">Genre</div>
+            </div>
+        """, unsafe_allow_html=True)
+
+        # Recommendation Rows
         for i, row in enumerate(display_df.itertuples(index=False), start=1):
             st.markdown(f"""
-                <div class="game-card">
-                    <div class="rank-num">RECOMMENDATION #{i:02d}</div>
-                    <div class="title-text">{html.escape(row.game_name)}</div>
-                    <div class="reason-box">
-                        “{html.escape(row.reason)}”
-                    </div>
-                    <div class="genre-tag">{html.escape(str(row.cluster_label))}</div>
+                <div class="rec-row">
+                    <div class="rec-rank">{i}</div>
+                    <div class="rec-name">{html.escape(row.game_name)}</div>
+                    <div class="rec-reason">{html.escape(row.reason)}</div>
+                    <div class="rec-tag">{html.escape(str(row.cluster_label))}</div>
                 </div>
             """, unsafe_allow_html=True)
 
     except Exception as e:
-        st.error(f"Engine Failure: {e}")
+        st.error(f"Error: {e}")
