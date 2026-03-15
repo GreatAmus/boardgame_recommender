@@ -10,7 +10,8 @@ from recommender import load_artifacts, recommend, gemini_explain
 
 st.set_page_config(
     page_title="Board Game Recommender",
-    layout="centered",
+    page_icon="🎲",
+    layout="wide",
 )
 
 
@@ -34,323 +35,401 @@ def cached_gemini_explain(api_key: str, recs_csv: str, seed_game: str = "", user
 
 art = load()
 df = art.df
+all_games = sorted(df["game_name"].dropna().unique().tolist())
+cluster_options = ["All clusters"] + [art.cluster_labels[k] for k in sorted(art.cluster_labels)]
+desc_to_id = {v: k for k, v in art.cluster_labels.items()}
 
 
 st.markdown(
     """
     <style>
         :root {
-            --bg: #f6f7fb;
-            --surface: #ffffff;
-            --surface-2: #f8faff;
-            --text: #161b26;
-            --muted: #697386;
-            --border: #e7ebf3;
-            --accent: #4f46e5;
-            --accent-soft: #eef2ff;
-            --accent-2: #7c3aed;
-            --shadow: 0 10px 28px rgba(17, 24, 39, 0.06);
-            --radius-lg: 22px;
-            --radius-md: 16px;
+            --bg: #0b1020;
+            --bg-accent: radial-gradient(circle at top left, rgba(99, 102, 241, 0.18), transparent 35%),
+                         radial-gradient(circle at top right, rgba(16, 185, 129, 0.12), transparent 30%),
+                         linear-gradient(180deg, #0b1020 0%, #0f172a 100%);
+            --panel: rgba(15, 23, 42, 0.78);
+            --panel-2: rgba(255, 255, 255, 0.04);
+            --panel-solid: #111827;
+            --border: rgba(255, 255, 255, 0.08);
+            --border-strong: rgba(255, 255, 255, 0.14);
+            --text: #e5e7eb;
+            --muted: #94a3b8;
+            --accent: #818cf8;
+            --accent-strong: #6366f1;
+            --accent-soft: rgba(129, 140, 248, 0.14);
+            --success-soft: rgba(16, 185, 129, 0.14);
+            --shadow: 0 20px 50px rgba(0, 0, 0, 0.28);
+            --radius-xl: 24px;
+            --radius-lg: 18px;
+            --radius-md: 14px;
             --radius-sm: 12px;
         }
 
-        html, body, [data-testid="stAppViewContainer"] {
-            background: var(--bg);
+        html, body, [data-testid="stAppViewContainer"], .stApp {
+            background: var(--bg-accent);
+            color: var(--text);
         }
 
-        .stApp {
-            background: var(--bg);
-        }
-
-        .block-container {
-            max-width: 720px;
-            padding-top: 0.8rem;
-            padding-bottom: 2.2rem;
-        }
-
-        .app-shell {
-            max-width: 680px;
-            margin: 0 auto;
-        }
-
-        /* Hide Streamlit's extra top padding feel a bit */
         [data-testid="stHeader"] {
             background: transparent;
         }
 
-        .appbar {
+        [data-testid="stToolbar"] {
+            right: 1rem;
+        }
+
+        .block-container {
+            max-width: 1280px;
+            padding-top: 1.4rem;
+            padding-bottom: 2rem;
+            padding-left: 1.2rem;
+            padding-right: 1.2rem;
+        }
+
+        h1, h2, h3, h4, h5, h6, p, div, span, label {
+            font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        }
+
+        .hero {
+            display: grid;
+            grid-template-columns: 1.25fr 0.75fr;
+            gap: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .hero-card,
+        .stat-card,
+        .surface-card,
+        .result-card,
+        .empty-card {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(16px);
+        }
+
+        .hero-card {
+            padding: 1.5rem;
+            min-height: 180px;
             display: flex;
-            align-items: center;
+            flex-direction: column;
             justify-content: space-between;
-            padding: 0.1rem 0 0.85rem 0;
         }
 
-        .appbar-left {
-            display: flex;
+        .hero-badge {
+            display: inline-flex;
             align-items: center;
-            gap: 0.75rem;
-            min-width: 0;
+            gap: 0.55rem;
+            background: var(--panel-2);
+            border: 1px solid var(--border);
+            color: #c7d2fe;
+            border-radius: 999px;
+            padding: 0.45rem 0.8rem;
+            font-size: 0.82rem;
+            font-weight: 700;
+            width: fit-content;
         }
 
-        .brand-badge {
-            width: 2.15rem;
-            height: 2.15rem;
-            border-radius: 14px;
-            background: linear-gradient(135deg, var(--accent), var(--accent-2));
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-size: 1.05rem;
+        .hero-title {
+            margin: 0.9rem 0 0.35rem 0;
+            font-size: 2.25rem;
+            line-height: 1.04;
+            letter-spacing: -0.04em;
             font-weight: 800;
-            box-shadow: 0 10px 18px rgba(79, 70, 229, 0.22);
-            flex-shrink: 0;
+            color: #f8fafc;
         }
 
-        .brand-wrap {
-            min-width: 0;
-        }
-
-        .brand-title {
-            font-size: 1.12rem;
-            font-weight: 800;
-            letter-spacing: -0.02em;
-            color: var(--text);
-            line-height: 1.15;
+        .hero-subtitle {
+            color: var(--muted);
+            font-size: 1rem;
+            line-height: 1.65;
+            max-width: 54rem;
             margin: 0;
         }
 
-        .brand-subtitle {
-            font-size: 0.85rem;
+        .hero-meta {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 0.8rem;
+        }
+
+        .stat-card {
+            padding: 1rem 1.05rem;
+            min-height: 90px;
+        }
+
+        .stat-label {
             color: var(--muted);
-            margin-top: 0.15rem;
-            line-height: 1.2;
-        }
-
-        .search-panel {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: var(--radius-lg);
-            padding: 1rem;
-            box-shadow: var(--shadow);
-            margin-bottom: 0.9rem;
-        }
-
-        .panel-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 0.85rem;
-        }
-
-        .panel-title {
-            font-size: 0.98rem;
-            font-weight: 750;
-            color: var(--text);
-            letter-spacing: -0.01em;
-        }
-
-        .panel-caption {
             font-size: 0.8rem;
-            color: var(--muted);
-        }
-
-        /* Segmented control */
-        div[data-testid="stRadio"] > div[role="radiogroup"] {
-            display: grid !important;
-            grid-template-columns: 1fr 1fr;
-            gap: 0.4rem;
-            background: #f2f4f8;
-            border: 1px solid var(--border);
-            border-radius: 14px;
-            padding: 0.3rem;
-            margin-bottom: 0.9rem;
-        }
-
-        div[data-testid="stRadio"] label {
-            margin: 0 !important;
-            background: transparent !important;
-            border: none !important;
-            border-radius: 11px !important;
-            min-height: 42px;
-            display: flex !important;
-            align-items: center;
-            justify-content: center;
-            color: var(--muted) !important;
-            font-weight: 650 !important;
-            transition: all 0.15s ease;
-        }
-
-        div[data-testid="stRadio"] label:has(input:checked) {
-            background: var(--surface) !important;
-            color: var(--text) !important;
-            box-shadow: 0 1px 2px rgba(16, 24, 40, 0.06), 0 0 0 1px rgba(79, 70, 229, 0.08);
-        }
-
-        .field-note {
-            color: var(--muted);
-            font-size: 0.83rem;
-            margin-top: -0.15rem;
-            margin-bottom: 0.55rem;
-        }
-
-        .filters-label {
-            font-size: 0.78rem;
-            font-weight: 800;
-            letter-spacing: 0.06em;
             text-transform: uppercase;
-            color: var(--muted);
-            margin-top: 0.2rem;
-            margin-bottom: 0.55rem;
-        }
-
-        .stSelectbox label,
-        .stTextArea label,
-        .stSlider label {
-            color: #354052 !important;
-            font-weight: 650 !important;
-            font-size: 0.9rem !important;
-        }
-
-        .stTextArea textarea {
-            border-radius: 14px !important;
-        }
-
-        .stSelectbox > div > div,
-        .stTextArea > div > div,
-        .stSlider {
-            margin-bottom: 0.15rem;
-        }
-
-        .results-header {
-            padding: 0.35rem 0 0.1rem 0;
+            letter-spacing: 0.08em;
+            font-weight: 700;
             margin-bottom: 0.35rem;
         }
 
-        .results-title {
+        .stat-value {
+            color: #f8fafc;
+            font-size: 1.35rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+        }
+
+        .layout-grid {
+            display: grid;
+            grid-template-columns: 360px minmax(0, 1fr);
+            gap: 1rem;
+            align-items: start;
+        }
+
+        .surface-card {
+            padding: 1.1rem;
+        }
+
+        .section-title {
             font-size: 1rem;
             font-weight: 800;
-            color: var(--text);
-            letter-spacing: -0.01em;
+            color: #f8fafc;
+            margin: 0 0 0.2rem 0;
+            letter-spacing: -0.02em;
         }
 
-        .results-subtitle {
+        .section-copy {
             color: var(--muted);
-            font-size: 0.88rem;
-            margin-top: 0.18rem;
-            line-height: 1.35;
+            font-size: 0.92rem;
+            line-height: 1.5;
+            margin-bottom: 1rem;
         }
 
-        .context-chip {
+        .pill {
             display: inline-flex;
             align-items: center;
             gap: 0.4rem;
             background: var(--accent-soft);
-            color: #3730a3;
-            border: 1px solid #dfe4ff;
+            color: #c7d2fe;
+            border: 1px solid rgba(129, 140, 248, 0.24);
             border-radius: 999px;
-            padding: 0.42rem 0.8rem;
-            font-size: 0.86rem;
-            font-weight: 600;
-            margin: 0.6rem 0 0.95rem 0;
-            max-width: 100%;
-            line-height: 1.3;
+            padding: 0.45rem 0.75rem;
+            font-size: 0.84rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
         }
 
-        .empty-state {
-            background: var(--surface);
-            border: 1px dashed #d8deea;
-            border-radius: 18px;
-            padding: 1rem;
-            color: var(--muted);
-            font-size: 0.94rem;
-            box-shadow: 0 4px 14px rgba(17, 24, 39, 0.03);
-        }
-
-        .rec-card {
-            background: var(--surface);
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            padding: 0.95rem 0.95rem 0.9rem 0.95rem;
-            margin-bottom: 0.72rem;
-            box-shadow: 0 8px 22px rgba(17, 24, 39, 0.045);
-        }
-
-        .rec-top {
+        .results-toolbar {
             display: flex;
-            align-items: flex-start;
-            gap: 0.72rem;
-            margin-bottom: 0.35rem;
+            justify-content: space-between;
+            align-items: flex-end;
+            gap: 1rem;
+            margin-bottom: 1rem;
         }
 
-        .rec-index {
-            min-width: 1.95rem;
-            height: 1.95rem;
-            border-radius: 999px;
-            background: var(--accent-soft);
-            color: var(--accent);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 0.86rem;
+        .results-title {
+            font-size: 1.08rem;
             font-weight: 800;
-            flex-shrink: 0;
-            margin-top: 0.04rem;
-        }
-
-        .rec-title-wrap {
-            min-width: 0;
-        }
-
-        .rec-title {
-            font-size: 1.01rem;
-            font-weight: 800;
-            color: var(--text);
-            line-height: 1.28;
-            letter-spacing: -0.01em;
+            color: #f8fafc;
+            letter-spacing: -0.02em;
             margin: 0;
         }
 
-        .rec-reason {
-            margin-left: 2.67rem;
-            color: #425066;
-            font-size: 0.94rem;
-            line-height: 1.55;
+        .results-copy {
+            color: var(--muted);
+            font-size: 0.92rem;
+            line-height: 1.5;
+            margin-top: 0.25rem;
+        }
+
+        .result-card {
+            padding: 1rem 1rem 0.95rem 1rem;
+            margin-bottom: 0.85rem;
+            transition: transform 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+        }
+
+        .result-card:hover {
+            transform: translateY(-2px);
+            border-color: rgba(129, 140, 248, 0.32);
+            background: rgba(15, 23, 42, 0.9);
+        }
+
+        .result-row {
+            display: grid;
+            grid-template-columns: 44px minmax(0, 1fr);
+            gap: 0.9rem;
+            align-items: start;
+        }
+
+        .rank-badge {
+            width: 44px;
+            height: 44px;
+            border-radius: 14px;
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.22), rgba(16, 185, 129, 0.18));
+            border: 1px solid rgba(129, 140, 248, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #eef2ff;
+            font-weight: 800;
+            font-size: 0.95rem;
+        }
+
+        .game-title {
+            color: #f8fafc;
+            font-size: 1.08rem;
+            font-weight: 800;
+            letter-spacing: -0.02em;
+            line-height: 1.3;
+            margin: 0 0 0.4rem 0;
+        }
+
+        .game-reason {
+            color: #cbd5e1;
+            font-size: 0.95rem;
+            line-height: 1.65;
+            margin: 0;
             white-space: normal;
             overflow-wrap: break-word;
             word-break: break-word;
         }
 
-        .stSpinner > div {
-            border-top-color: var(--accent) !important;
+        .empty-card {
+            padding: 1.2rem;
+            color: var(--muted);
+            font-size: 0.96rem;
+            line-height: 1.6;
+        }
+
+        .hint-list {
+            margin: 0.2rem 0 0 1rem;
+            padding: 0;
+            color: var(--muted);
+        }
+
+        .hint-list li {
+            margin-bottom: 0.35rem;
+        }
+
+        div[data-testid="stRadio"] > div {
+            gap: 0.5rem;
+        }
+
+        div[data-testid="stRadio"] > div[role="radiogroup"] {
+            display: grid !important;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 0.45rem;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 0.35rem;
+        }
+
+        div[data-testid="stRadio"] label {
+            min-height: 46px;
+            border-radius: 12px !important;
+            justify-content: center;
+            background: transparent !important;
+            border: none !important;
+            color: var(--muted) !important;
+            font-weight: 700 !important;
+            margin: 0 !important;
+        }
+
+        div[data-testid="stRadio"] label:has(input:checked) {
+            background: rgba(129, 140, 248, 0.14) !important;
+            color: #eef2ff !important;
+            box-shadow: inset 0 0 0 1px rgba(129, 140, 248, 0.18);
+        }
+
+        .stSelectbox label,
+        .stTextArea label,
+        .stSlider label {
+            color: #dbe4f0 !important;
+            font-size: 0.9rem !important;
+            font-weight: 700 !important;
+        }
+
+        .stTextArea textarea,
+        .stSelectbox > div > div,
+        .stNumberInput > div > div {
+            border-radius: 14px !important;
+        }
+
+        .stTextArea textarea,
+        .stSelectbox > div > div > div,
+        .stSlider,
+        .stTextInput input {
+            background-color: rgba(255, 255, 255, 0.03) !important;
+            color: #f8fafc !important;
+        }
+
+        .stSelectbox div[data-baseweb="select"] > div,
+        .stTextArea textarea {
+            border: 1px solid var(--border-strong) !important;
+        }
+
+        .stTextArea textarea::placeholder {
+            color: #7c8aa0 !important;
+        }
+
+        div[data-baseweb="select"] span,
+        div[data-baseweb="select"] input,
+        .stTextArea textarea,
+        .stSlider label,
+        .stMarkdown,
+        .stCaption {
+            color: #f8fafc;
+        }
+
+        .stSlider [data-baseweb="slider"] > div > div {
+            background: var(--accent-strong) !important;
+        }
+
+        .stSlider [role="slider"] {
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.18) !important;
+        }
+
+        .stAlert {
+            border-radius: 16px;
+        }
+
+        .footer-note {
+            color: var(--muted);
+            font-size: 0.82rem;
+            margin-top: 0.6rem;
+            line-height: 1.5;
+        }
+
+        @media (max-width: 1100px) {
+            .hero,
+            .layout-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .hero-meta {
+                grid-template-columns: 1fr;
+            }
         }
 
         @media (max-width: 640px) {
             .block-container {
-                padding-left: 0.85rem;
-                padding-right: 0.85rem;
-                padding-top: 0.55rem;
+                padding-left: 0.8rem;
+                padding-right: 0.8rem;
             }
 
-            .search-panel {
-                padding: 0.9rem;
+            .hero-card,
+            .surface-card,
+            .result-card,
+            .empty-card,
+            .stat-card {
+                border-radius: 18px;
             }
 
-            .brand-title {
-                font-size: 1.05rem;
+            .hero-title {
+                font-size: 1.8rem;
             }
 
-            .brand-subtitle {
-                font-size: 0.82rem;
-            }
-
-            .rec-card {
-                padding: 0.9rem 0.9rem 0.85rem 0.9rem;
-            }
-
-            .rec-reason {
-                margin-left: 2.58rem;
+            .results-toolbar {
+                flex-direction: column;
+                align-items: start;
             }
         }
     </style>
@@ -358,16 +437,49 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-st.markdown('<div class="app-shell">', unsafe_allow_html=True)
+
+def render_result_card(index: int, game_name: str, reason: str) -> None:
+    st.markdown(
+        f"""
+        <div class="result-card">
+            <div class="result-row">
+                <div class="rank-badge">{index}</div>
+                <div>
+                    <div class="game-title">{html.escape(str(game_name))}</div>
+                    <p class="game-reason">{html.escape(str(reason))}</p>
+                </div>
+            </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
 
 st.markdown(
-    """
-    <div class="appbar">
-        <div class="appbar-left">
-            <div class="brand-badge">🎲</div>
-            <div class="brand-wrap">
-                <div class="brand-title">Board Game Recommender</div>
-                <div class="brand-subtitle">Find games by title or natural-language search</div>
+    f"""
+    <div class="hero">
+        <div class="hero-card">
+            <div>
+                <div class="hero-badge">🎲 Smart discovery for tabletop players</div>
+                <h1 class="hero-title">Board Game Recommender</h1>
+                <p class="hero-subtitle">
+                    Search by a game you already love or describe the experience you want.
+                    The app returns the best matching games from review-driven recommendation artifacts.
+                </p>
+            </div>
+        </div>
+        <div class="hero-meta">
+            <div class="stat-card">
+                <div class="stat-label">Games indexed</div>
+                <div class="stat-value">{len(all_games):,}</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Search modes</div>
+                <div class="stat-value">2</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Clusters</div>
+                <div class="stat-value">{len(cluster_options) - 1}</div>
             </div>
         </div>
     </div>
@@ -375,71 +487,73 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-st.markdown('<div class="search-panel">', unsafe_allow_html=True)
-st.markdown(
-    """
-    <div class="panel-header">
-        <div class="panel-title">Search</div>
-        <div class="panel-caption">Review-based recommendations</div>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
+st.markdown('<div class="layout-grid">', unsafe_allow_html=True)
 
-mode = st.radio(
-    "Search mode",
-    ["Game name", "Natural language query"],
-    horizontal=True,
-    label_visibility="collapsed",
-)
-
-if mode == "Game name":
-    st.markdown('<div class="field-note">Choose a seed game to find similar titles.</div>', unsafe_allow_html=True)
-    game = st.selectbox(
-        "Game",
-        sorted(df["game_name"].dropna().unique().tolist()),
-        label_visibility="collapsed",
-        placeholder="Choose a game",
+with st.container():
+    st.markdown('<div class="surface-card">', unsafe_allow_html=True)
+    st.markdown('<div class="section-title">Search controls</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="section-copy">Choose how you want to search, then refine the ranking with a few lightweight filters.</div>',
+        unsafe_allow_html=True,
     )
-    user_query = ""
-else:
-    st.markdown('<div class="field-note">Describe the kind of game you want.</div>', unsafe_allow_html=True)
-    user_query = st.text_area(
-        "Query",
-        placeholder="Strategic engine-building game with strong replayability and low direct conflict",
-        height=96,
+
+    mode = st.radio(
+        "Search mode",
+        ["Game name", "Natural language query"],
+        horizontal=True,
         label_visibility="collapsed",
     )
-    game = ""
 
-st.markdown('<div class="filters-label">Filters</div>', unsafe_allow_html=True)
+    if mode == "Game name":
+        game = st.selectbox(
+            "Pick a game",
+            all_games,
+            help="Use a known game as the seed for similar recommendations.",
+        )
+        user_query = ""
+    else:
+        user_query = st.text_area(
+            "Describe what you want",
+            placeholder="Strategic engine-building game with strong replayability and low direct conflict",
+            height=120,
+            help="Describe mechanics, mood, complexity, player interaction, or replayability.",
+        )
+        game = ""
 
-col1, col2 = st.columns(2)
+    st.markdown('<div style="height: 0.35rem"></div>', unsafe_allow_html=True)
 
-with col1:
-    top_n = st.slider("Recommendations", 3, 12, 5, 1)
+    top_n = st.slider(
+        "Number of recommendations",
+        min_value=3,
+        max_value=12,
+        value=6,
+        step=1,
+    )
 
-with col2:
-    sentiment_weight = st.slider("Sentiment weight", 0.0, 1.0, 0.25, 0.05)
+    sentiment_weight = st.slider(
+        "Sentiment weight",
+        min_value=0.0,
+        max_value=1.0,
+        value=0.25,
+        step=0.05,
+        help="Higher values give more influence to review sentiment in the ranking.",
+    )
 
-cluster_options = ["All clusters"] + [art.cluster_labels[k] for k in sorted(art.cluster_labels)]
-selected_cluster_desc = st.selectbox("Cluster", cluster_options)
+    selected_cluster_desc = st.selectbox(
+        "Cluster",
+        cluster_options,
+        help="Limit recommendations to a specific game cluster, or search across all clusters.",
+    )
 
-cluster_id = None
-if selected_cluster_desc != "All clusters":
-    desc_to_id = {v: k for k, v in art.cluster_labels.items()}
-    cluster_id = desc_to_id[selected_cluster_desc]
+    cluster_id = None
+    if selected_cluster_desc != "All clusters":
+        cluster_id = desc_to_id[selected_cluster_desc]
 
-st.markdown('</div>', unsafe_allow_html=True)
-
-st.markdown(
-    """
-    <div class="results-header">
-        <div class="results-title">Recommendations</div>
-    </div>
-    """,
-    unsafe_allow_html=True,
-)
+    st.markdown(
+        '<div class="footer-note">Tip: natural-language search works best when you mention mechanics, complexity, pacing, or interaction style.</div>',
+        unsafe_allow_html=True,
+    )
+    st.markdown('</div>', unsafe_allow_html=True)
 
 run_query = False
 if mode == "Game name" and game:
@@ -447,85 +561,84 @@ if mode == "Game name" and game:
 if mode == "Natural language query" and user_query.strip():
     run_query = True
 
-if not run_query:
-    if mode == "Game name":
-        subtitle = "Choose a game above to see similar recommendations."
-    else:
-        subtitle = "Enter a natural-language query above to see matching recommendations."
-
-    st.markdown(
-        f'<div class="results-subtitle">{html.escape(subtitle)}</div>',
-        unsafe_allow_html=True,
-    )
-    st.markdown(
-        '<div class="empty-state">Recommendations will appear here once you complete a search.</div>',
-        unsafe_allow_html=True,
-    )
-else:
-    query_type = "game_name" if mode == "Game name" else "text_query"
-    query_value = game if mode == "Game name" else user_query
+with st.container():
+    st.markdown('<div class="surface-card">', unsafe_allow_html=True)
 
     if mode == "Game name":
-        subtitle = "Similar games with concise recommendation reasons."
-        context_text = f'Based on “{game}”'
+        context_text = f'Based on “{game}”' if game else "Choose a game to begin"
+        subtitle = "Similar games ranked using the same recommendation pipeline and optional explanation generation."
     else:
-        subtitle = "Games that best match your natural-language request."
-        context_text = f'Query: “{user_query}”'
+        context_text = f'Query: “{user_query.strip()}”' if user_query.strip() else "Describe the kind of game you want"
+        subtitle = "Games that best match your natural-language request, filtered and ranked by your settings."
 
     st.markdown(
-        f'<div class="results-subtitle">{html.escape(subtitle)}</div>',
-        unsafe_allow_html=True,
-    )
-    st.markdown(
-        f'<div class="context-chip">{html.escape(context_text)}</div>',
+        f"""
+        <div class="results-toolbar">
+            <div>
+                <div class="results-title">Recommendations</div>
+                <div class="results-copy">{html.escape(subtitle)}</div>
+            </div>
+        </div>
+        """,
         unsafe_allow_html=True,
     )
 
-    try:
-        recs = recommend(
-            art=art,
-            query_type=query_type,
-            query_value=query_value,
-            sentiment_weight=sentiment_weight,
-            cluster_id=cluster_id,
-            top_n=top_n,
+    st.markdown(
+        f'<div class="pill">✨ {html.escape(context_text)}</div>',
+        unsafe_allow_html=True,
+    )
+
+    if not run_query:
+        st.markdown(
+            """
+            <div class="empty-card">
+                <strong style="color:#f8fafc; display:block; margin-bottom:0.45rem;">Start with a search</strong>
+                Recommendations will appear here once you either choose a seed game or enter a natural-language query.
+                <ul class="hint-list">
+                    <li>Use <strong>Game name</strong> when you want titles similar to a favorite game.</li>
+                    <li>Use <strong>Natural language query</strong> when you want to describe mechanics or play feel.</li>
+                    <li>Adjust cluster and sentiment weight to fine-tune the ranking.</li>
+                </ul>
+            </div>
+            """,
+            unsafe_allow_html=True,
         )
+    else:
+        query_type = "game_name" if mode == "Game name" else "text_query"
+        query_value = game if mode == "Game name" else user_query.strip()
 
-        if "GEMINI_API_KEY" in st.secrets:
-            with st.spinner("Generating explanations..."):
-                reasons_df = cached_gemini_explain(
-                    api_key=st.secrets["GEMINI_API_KEY"],
-                    recs_csv=recs.to_csv(index=False),
-                    seed_game=game,
-                    user_query=user_query,
+        try:
+            with st.spinner("Finding recommendations..."):
+                recs = recommend(
+                    art=art,
+                    query_type=query_type,
+                    query_value=query_value,
+                    sentiment_weight=sentiment_weight,
+                    cluster_id=cluster_id,
+                    top_n=top_n,
                 )
-        else:
-            reasons_df = recs[["game_name"]].copy()
-            reasons_df["reason"] = "Add GEMINI_API_KEY in Streamlit Secrets to show recommendation reasons."
 
-        display_df = recs[["game_name"]].merge(reasons_df, on="game_name", how="left")
-        display_df["reason"] = display_df["reason"].fillna("No explanation returned.")
+            if "GEMINI_API_KEY" in st.secrets:
+                with st.spinner("Writing concise recommendation reasons..."):
+                    reasons_df = cached_gemini_explain(
+                        api_key=st.secrets["GEMINI_API_KEY"],
+                        recs_csv=recs.to_csv(index=False),
+                        seed_game=game,
+                        user_query=user_query.strip(),
+                    )
+            else:
+                reasons_df = recs[["game_name"]].copy()
+                reasons_df["reason"] = "Add GEMINI_API_KEY in Streamlit Secrets to show recommendation reasons."
 
-        for i, row in enumerate(display_df.itertuples(index=False), start=1):
-            game_name = html.escape(str(row.game_name))
-            reason = html.escape(str(row.reason))
+            display_df = recs[["game_name"]].merge(reasons_df, on="game_name", how="left")
+            display_df["reason"] = display_df["reason"].fillna("No explanation returned.")
 
-            st.markdown(
-                f"""
-                <div class="rec-card">
-                    <div class="rec-top">
-                        <div class="rec-index">{i}</div>
-                        <div class="rec-title-wrap">
-                            <div class="rec-title">{game_name}</div>
-                        </div>
-                    </div>
-                    <div class="rec-reason">{reason}</div>
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
+            for i, row in enumerate(display_df.itertuples(index=False), start=1):
+                render_result_card(i, row.game_name, row.reason)
 
-    except Exception as e:
-        st.error(str(e))
+        except Exception as e:
+            st.error(str(e))
+
+    st.markdown('</div>', unsafe_allow_html=True)
 
 st.markdown('</div>', unsafe_allow_html=True)
