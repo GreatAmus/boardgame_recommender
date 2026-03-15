@@ -12,12 +12,7 @@ st.set_page_config(page_title="Board Game Recommender", layout="wide")
 
 @st.cache_resource
 def load():
-    if "TFIDF_URL" in st.secrets:
-        os.environ["TFIDF_URL"] = st.secrets["TFIDF_URL"]
-    if "SVD_URL" in st.secrets:
-        os.environ["SVD_URL"] = st.secrets["SVD_URL"]
-    if "NORM_URL" in st.secrets:
-        os.environ["NORM_URL"] = st.secrets["NORM_URL"]
+    os.environ["SVD_URL"] = st.secrets["SVD_URL"]
     return load_artifacts("artifacts")
 
 
