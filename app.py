@@ -40,31 +40,37 @@ st.markdown(
     """
     <style>
         .block-container {
-            max-width: 860px;
-            padding-top: 2rem;
-            padding-bottom: 3rem;
+            max-width: 880px;
+            padding-top: 1.25rem;
+            padding-bottom: 2.5rem;
         }
 
         h1, h2, h3 {
-            letter-spacing: -0.02em;
+            letter-spacing: -0.01em;
         }
 
-        .page-subtitle {
+        .app-title {
+            font-size: 1.55rem;
+            font-weight: 700;
+            color: #111827;
+            margin-bottom: 0.25rem;
+        }
+
+        .app-subtitle {
             color: #6b7280;
-            font-size: 1rem;
-            margin-top: -0.35rem;
-            margin-bottom: 1.5rem;
+            font-size: 0.95rem;
+            margin-bottom: 1.1rem;
         }
 
         .context-line {
             color: #374151;
-            font-size: 0.98rem;
-            margin-bottom: 1.25rem;
+            font-size: 0.97rem;
+            margin-bottom: 1rem;
         }
 
         .divider {
             border-top: 1px solid #e5e7eb;
-            margin: 1rem 0 1.4rem 0;
+            margin: 0.9rem 0 1.2rem 0;
         }
 
         .result-row {
@@ -73,17 +79,17 @@ st.markdown(
         }
 
         .result-title {
-            font-size: 1.06rem;
+            font-size: 1.04rem;
             font-weight: 700;
             color: #111827;
-            margin-bottom: 0.3rem;
+            margin-bottom: 0.28rem;
             line-height: 1.35;
         }
 
         .result-reason {
-            font-size: 0.98rem;
+            font-size: 0.97rem;
             color: #374151;
-            line-height: 1.6;
+            line-height: 1.58;
             white-space: normal;
             overflow-wrap: break-word;
             word-break: break-word;
@@ -91,12 +97,25 @@ st.markdown(
 
         .empty-note {
             color: #6b7280;
-            font-size: 0.98rem;
-            margin-top: 1rem;
+            font-size: 0.96rem;
+            margin-top: 0.8rem;
         }
 
         section[data-testid="stSidebar"] {
             border-right: 1px solid #eceff3;
+            background: #fbfbfc;
+        }
+
+        section[data-testid="stSidebar"] .block-container {
+            padding-top: 1rem;
+        }
+
+        section[data-testid="stSidebar"] h1,
+        section[data-testid="stSidebar"] h2,
+        section[data-testid="stSidebar"] h3 {
+            font-size: 1rem !important;
+            font-weight: 700 !important;
+            color: #111827;
         }
 
         section[data-testid="stSidebar"] .stRadio > label,
@@ -104,6 +123,23 @@ st.markdown(
         section[data-testid="stSidebar"] .stTextArea > label,
         section[data-testid="stSidebar"] .stSlider > label {
             font-weight: 600;
+            font-size: 0.9rem;
+            color: #374151;
+        }
+
+        section[data-testid="stSidebar"] .stMarkdown p {
+            font-size: 0.88rem;
+            color: #6b7280;
+        }
+
+        .sidebar-section-label {
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: #6b7280;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-top: 0.25rem;
+            margin-bottom: 0.55rem;
         }
     </style>
     """,
@@ -112,31 +148,32 @@ st.markdown(
 
 
 with st.sidebar:
-    st.header("Search")
+    st.markdown('<div class="sidebar-section-label">Search</div>', unsafe_allow_html=True)
 
     mode = st.radio(
         "Mode",
         ["Game name", "Natural language query"],
         index=0,
+        label_visibility="visible",
     )
 
     if mode == "Game name":
         game = st.selectbox(
-            "Choose a game",
+            "Game",
             sorted(df["game_name"].dropna().unique().tolist()),
         )
         user_query = ""
     else:
         user_query = st.text_area(
-            "Describe what you want",
-            placeholder="Example: a strategic engine-building game with strong replayability and low direct conflict",
-            height=120,
+            "Query",
+            placeholder="Strategic engine-building game with strong replayability and low direct conflict",
+            height=110,
         )
         game = ""
 
-    st.markdown("---")
+    st.markdown('<div class="sidebar-section-label">Filters</div>', unsafe_allow_html=True)
 
-    top_n = st.slider("Number of recommendations", 3, 12, 5, 1)
+    top_n = st.slider("Recommendations", 3, 12, 5, 1)
     sentiment_weight = st.slider("Sentiment weight", 0.0, 1.0, 0.25, 0.05)
 
     cluster_options = ["All clusters"] + [art.cluster_labels[k] for k in sorted(art.cluster_labels)]
@@ -148,9 +185,9 @@ with st.sidebar:
         cluster_id = desc_to_id[selected_cluster_desc]
 
 
-st.title("Board Game Recommender")
+st.markdown('<div class="app-title">Board Game Recommender</div>', unsafe_allow_html=True)
 st.markdown(
-    '<div class="page-subtitle">Find recommended games from review-based similarity and concise natural-language explanations.</div>',
+    '<div class="app-subtitle">Search by seed game or natural-language description.</div>',
     unsafe_allow_html=True,
 )
 
@@ -162,9 +199,9 @@ if mode == "Natural language query" and user_query.strip():
 
 if not run_query:
     if mode == "Game name":
-        context_text = "Select a game in the sidebar to see recommendations."
+        context_text = "Select a game in the sidebar to generate recommendations."
     else:
-        context_text = "Enter a natural-language query in the sidebar to see recommendations."
+        context_text = "Enter a natural-language query in the sidebar to generate recommendations."
 
     st.markdown(
         f'<div class="context-line">{html.escape(context_text)}</div>',
@@ -172,7 +209,7 @@ if not run_query:
     )
     st.markdown('<div class="divider"></div>', unsafe_allow_html=True)
     st.markdown(
-        '<div class="empty-note">Your recommendations will appear here.</div>',
+        '<div class="empty-note">Recommendations will appear here.</div>',
         unsafe_allow_html=True,
     )
 else:
@@ -180,9 +217,9 @@ else:
     query_value = game if mode == "Game name" else user_query
 
     if mode == "Game name":
-        context_text = f'Showing recommendations based on: "{game}"'
+        context_text = f'Based on: "{game}"'
     else:
-        context_text = f'Showing recommendations for: "{user_query}"'
+        context_text = f'Based on your query: "{user_query}"'
 
     st.markdown(
         f'<div class="context-line">{html.escape(context_text)}</div>',
