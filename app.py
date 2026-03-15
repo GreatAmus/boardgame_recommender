@@ -12,7 +12,7 @@ st.set_page_config(
     layout="wide",
 )
 
-# 2. Optimized High-Density CSS
+# 2. CSS: High-Density & Action-Oriented
 st.markdown("""
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap');
@@ -27,7 +27,6 @@ st.markdown("""
             max-width: 1400px;
         }
 
-        /* Top Header */
         .top-bar {
             border-bottom: 2px solid #f1f5f9;
             padding-bottom: 0.5rem;
@@ -44,7 +43,7 @@ st.markdown("""
             margin: 0;
         }
 
-        /* The Editorial Table Style */
+        /* Editorial Table Layout */
         .rec-row {
             display: grid;
             grid-template-columns: 40px 220px 1fr 180px;
@@ -55,58 +54,29 @@ st.markdown("""
             background: white;
         }
 
-        .rec-row:hover {
-            background-color: #f8fafc;
-        }
+        .rec-row:hover { background-color: #f8fafc; }
+        .rec-rank { font-weight: 700; color: #94a3b8; font-size: 0.9rem; }
+        .rec-name { font-weight: 700; font-size: 0.95rem; color: #0f172a; }
+        .rec-reason { font-size: 0.9rem; color: #475569; line-height: 1.5; }
+        .rec-tag { font-size: 0.7rem; font-weight: 700; background: #f1f5f9; padding: 4px 8px; border-radius: 4px; text-align: center; text-transform: uppercase; color: #64748b; }
 
-        .rec-rank {
-            font-weight: 700;
-            color: #94a3b8;
-            font-size: 0.9rem;
-        }
-
-        .rec-name {
-            font-weight: 700;
-            font-size: 0.95rem;
-            color: #0f172a;
-        }
-
-        .rec-reason {
-            font-size: 0.9rem;
-            color: #475569;
-            line-height: 1.5;
-        }
-
-        .rec-tag {
-            font-size: 0.7rem;
-            font-weight: 700;
-            background: #f1f5f9;
-            padding: 4px 8px;
-            border-radius: 4px;
-            text-align: center;
-            text-transform: uppercase;
-            color: #64748b;
-        }
-
-        /* Sidebar & Button Styling */
-        [data-testid="stSidebar"] {
-            background-color: #ffffff !important;
-            border-right: 1px solid #e2e8f0;
-        }
-        
+        /* Sidebar Button Highlighting */
         div.stButton > button {
             width: 100%;
             background-color: #6366f1;
             color: white;
             border: none;
-            padding: 0.5rem;
-            font-weight: 600;
-            border-radius: 6px;
+            padding: 0.6rem;
+            font-weight: 700;
+            border-radius: 8px;
+            margin-top: 1rem;
+            box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.2);
         }
         
         div.stButton > button:hover {
             background-color: #4f46e5;
             color: white;
+            transform: translateY(-1px);
         }
     </style>
 """, unsafe_allow_html=True)
@@ -128,28 +98,29 @@ all_games = sorted(art.df["game_name"].dropna().unique().tolist())
 cluster_options = ["All Genres"] + [art.cluster_labels[k] for k in sorted(art.cluster_labels)]
 desc_to_id = {v: k for k, v in art.cluster_labels.items()}
 
-# 4. Sidebar Nav with Form (Search Button)
+# 4. Sidebar: Action-First Form
 with st.sidebar:
     st.subheader("Search Engine")
-    
-    # Toggle switch outside the form so it resets the fields appropriately
     mode = st.toggle("Natural Language Mode", value=False)
     
-    with st.form("search_form"):
+    with st.form("search_form", clear_on_submit=False):
+        # SEARCH INPUTS (TOP)
         if not mode:
-            game_input = st.selectbox("Based on this game:", all_games)
+            game_input = st.selectbox("Base Game:", all_games)
             query_input = ""
         else:
-            query_input = st.text_area("Describe the gameplay:", placeholder="e.g. Cooperative dungeon crawler with deck building")
+            query_input = st.text_area("Gameplay Description:", placeholder="Enter your vibe here...")
             game_input = ""
 
-        st.divider()
+        # PRIMARY ACTION (Move Up)
+        submit_button = st.form_submit_button("Find Games")
+
+        # REFINEMENT CONTROLS (BOTTOM)
+        st.markdown("---")
+        st.caption("Refine Results")
         top_n = st.slider("Results", 5, 20, 10)
         sentiment_weight = st.slider("Vibe Weight", 0.0, 1.0, 0.2)
         selected_cluster = st.selectbox("Genre Filter", cluster_options)
-        
-        # The Manual Search Button
-        submit_button = st.form_submit_button("Find Games")
 
 cluster_id = desc_to_id[selected_cluster] if selected_cluster != "All Genres" else None
 
@@ -161,18 +132,17 @@ st.markdown("""
     </div>
 """, unsafe_allow_html=True)
 
-# Run query ONLY when button is clicked
 if not submit_button:
-    st.info("👈 Configure your search in the sidebar and click 'Find Games' to begin.")
+    st.info("👈 Select a game or type a vibe and hit **Enter** (or click Find Games).")
 else:
     q_type = "game_name" if not mode else "text_query"
     q_val = game_input if not mode else query_input.strip()
 
     if q_type == "text_query" and not q_val:
-        st.warning("Please enter a description before searching.")
+        st.warning("Please provide a description.")
     else:
         try:
-            with st.spinner("Fetching matches..."):
+            with st.spinner("Analyzing recommendations..."):
                 recs = recommend(art, q_type, q_val, sentiment_weight, cluster_id, top_n)
 
             if "GEMINI_API_KEY" in st.secrets:
@@ -181,13 +151,13 @@ else:
                 )
             else:
                 reasons_df = recs[["game_name"]].copy()
-                reasons_df["reason"] = "Add GEMINI_API_KEY for AI analysis."
+                reasons_df["reason"] = "AI Analysis requires API Key."
 
             display_df = recs.merge(reasons_df, on="game_name", how="left")
 
             # Table Header
             st.markdown("""
-                <div style="display: grid; grid-template-columns: 40px 220px 1fr 180px; gap: 15px; padding: 8px 15px; background: #0f172a; color: white; border-radius: 4px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;">
+                <div style="display: grid; grid-template-columns: 40px 220px 1fr 180px; gap: 15px; padding: 8px 15px; background: #1e293b; color: white; border-radius: 6px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px;">
                     <div>#</div>
                     <div>Game Title</div>
                     <div>Recommendation Logic</div>
@@ -195,7 +165,7 @@ else:
                 </div>
             """, unsafe_allow_html=True)
 
-            # Rows
+            # Table Rows
             for i, row in enumerate(display_df.itertuples(index=False), start=1):
                 st.markdown(f"""
                     <div class="rec-row">
@@ -207,4 +177,4 @@ else:
                 """, unsafe_allow_html=True)
 
         except Exception as e:
-            st.error(f"Search failed: {e}")
+            st.error(f"Error: {e}")
