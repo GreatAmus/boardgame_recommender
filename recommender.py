@@ -99,7 +99,8 @@ def recommend(art: RecommenderArtifacts,
     out["cluster_label"] = out["cluster"].map(art.cluster_labels).fillna("Unlabeled")
 
     return out.sort_values("combined_score", ascending=False).reset_index(drop=True)
-                  def format_recs_for_prompt(seed_game: str, rec_df: pd.DataFrame) -> str:
+
+def format_recs_for_prompt(seed_game: str, rec_df: pd.DataFrame) -> str:
     lines = [f"Seed game: {seed_game}", "Recommendations:"]
     for r in rec_df.itertuples(index=False):
         score = getattr(r, "score", getattr(r, "combined_score", None))
