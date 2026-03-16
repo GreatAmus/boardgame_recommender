@@ -75,18 +75,21 @@ def load_artifacts(artifacts_dir: str = "artifacts") -> RecommenderArtifacts:
     embedder = make_pipeline(tv, svd, norm)
 
     cluster_labels = {
-        0: "Tile-laying and spatial puzzles",
-        1: "Air & naval wargames",
-        2: "Conflict strategy and dudes-on-a-map",
-        3: "Kids & family games",
-        4: "Deduction & puzzles",
-        5: "Word games",
-        6: "Land wargames",
-        7: "Dungeon crawler",
-        8: "Light filler and abstract games",
-        9: "Heavy euro and engine building",
-        10: "Midweight tile and action games (mid Euros)",
-        11: "Card games",
+        0: "Thematic conflict and character-driven games",
+        1: "Abstract strategy and spatial board games",
+        2: "Word and party word games",
+        3: "Historical hex-and-counter wargames",
+        4: "Trick-taking card games",
+        5: "Conflict and empire-building strategy games",
+        6: "Dice-driven light and midweight games",
+        7: "Deduction and escape-room games",
+        8: "Family and parent-approved games",
+        9: "Tile-laying and spatial pattern games",
+        10: "Dungeon crawlers and campaign adventure games",
+        11: "Worker placement and resource management Euros",
+        12: "Light games with metadata-style descriptions",
+        13: "Kids and family games",
+        14: "Light card and push-your-luck games",
     }
 
     return RecommenderArtifacts(df=df, X=X, embedder=embedder, cluster_labels=cluster_labels)
